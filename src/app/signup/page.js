@@ -1,116 +1,135 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/app/utils/supabase'
+
 export default function Signup() {
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+  const router = useRouter()
+
+  const handleSignup = async (e) => {
+    e.preventDefault()
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    try {
+      // Step 1: Create the user in Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            username: username,
+          },
+          emailRedirectTo: `${window.location.origin}/dash`,
+        },
+      })
+
+      if (signUpError) {
+        setError(signUpError.message)
+        setSuccess(null)
+        console.error('Signup Error:', signUpError)
+        return
+      }
+
+      // Step 2: If user creation is successful, insert user data into a separate 'profiles' table
+      const user = data.user;
+      if (user) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: user.id,
+              username: username,
+              email: email,
+            },
+          ]);
+
+        if (insertError) {
+          // You may want to handle this more gracefully, e.g., logging an error and still
+          // telling the user to check their email, but it's important to know it failed.
+          console.error('Database insert error:', insertError);
+        }
+      }
+
+      setSuccess('Signup successful! Please check your email for a verification link.')
+      setError(null)
+
+    } catch (err) {
+      setError('An unexpected error occurred.')
+      console.error('Unexpected error:', err)
+      setSuccess(null)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
-      {/* Navigation */}
-      <nav className="border-b border-blue-100 bg-white/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-start items-center py-4">
-            {/* Logo */}
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              YourBrand
-            </h1>
-          </div>
+    <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto', border: '1px solid #ccc', borderRadius: '8px', fontFamily: 'sans-serif' }}>
+      <h1 style={{ textAlign: 'center' }}>Sign Up</h1>
+      <form onSubmit={handleSignup}>
+        {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+        {success && <p style={{ color: 'green', textAlign: 'center' }}>{success}</p>}
+
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="username" style={{ display: 'block', marginBottom: '5px' }}>Username</label>
+          <input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+          />
         </div>
-      </nav>
 
-      {/* Breadcrumbs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <nav className="flex items-center space-x-2 text-sm text-gray-600">
-          <a href="/" className="hover:text-blue-600 transition-colors cursor-pointer">
-            Home
-          </a>
-          <span>/</span>
-          <span className="text-blue-600 font-medium">Sign Up</span>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex items-center justify-center px-4 pb-20">
-        <div className="max-w-md w-full">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Create Account
-            </h1>
-            <p className="text-gray-600">Join us and start your journey today</p>
-          </div>
-
-          {/* Signup Form */}
-          <div className="bg-white rounded-3xl p-8 shadow-xl border border-blue-100">
-            <form className="space-y-6">
-              {/* Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all duration-200 text-gray-900"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all duration-200 text-gray-900"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all duration-200 text-gray-900"
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-
-              {/* Confirm Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all duration-200 text-gray-900"
-                  placeholder="Confirm your password"
-                  required
-                />
-              </div>
-
-              {/* Signup Button */}
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
-              >
-                Create Account
-              </button>
-            </form>
-
-            {/* Login Link */}
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
-                Already have an account?{' '}
-                <a href="/login" className="text-blue-600 hover:text-blue-800 font-medium transition-colors cursor-pointer">
-                  Sign in here
-                </a>
-              </p>
-            </div>
-          </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+          />
         </div>
-      </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Create Password</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label htmlFor="confirm-password" style={{ display: 'block', marginBottom: '5px' }}>Confirm Password</label>
+          <input
+            id="confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+          />
+        </div>
+
+        <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}>
+          Sign Up
+        </button>
+      </form>
     </div>
-  );
+  )
 }
