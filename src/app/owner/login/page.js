@@ -43,7 +43,7 @@ export default function OwnerLogin() {
       if (rememberMe) {
         localStorage.setItem('rememberOwner', 'true');
       }
-      router.push('/owner/staff-management');
+      router.push('/owner/dashboard');
     }
   };
 

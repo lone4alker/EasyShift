@@ -1,9 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/app/utils/supabase'
 
 export default function StaffManagementPage() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [ownerData, setOwnerData] = useState(null);
+  const router = useRouter();
   const [staff, setStaff] = useState([
     {
       id: 1,
@@ -48,6 +54,74 @@ export default function StaffManagementPage() {
     maxHours: 8,
     availability: [],
   })
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const fetchOwnerData = async (user) => {
+    console.log('Fetching owner data for user ID:', user.id);
+    
+    // Try to fetch all business records first to debug
+    try {
+      const { data: allBusinesses, error: listError } = await supabase
+        .from('businesses')
+        .select('*')
+        .limit(5);
+      
+      console.log('All businesses (first 5):', allBusinesses);
+      console.log('List error:', listError);
+    } catch (err) {
+      console.log('Error fetching businesses list:', err);
+    }
+
+    // Try multiple approaches to find the owner data
+    const attempts = [
+      // Attempt 1: owner_id field
+      () => supabase.from('businesses').select('*').eq('owner_id', user.id).single(),
+      // Attempt 2: id field
+      () => supabase.from('businesses').select('*').eq('id', user.id).single(),
+      // Attempt 3: user_id field (common alternative)
+      () => supabase.from('businesses').select('*').eq('user_id', user.id).single(),
+      // Attempt 4: Get first business record for this user's email
+      () => supabase.from('businesses').select('*').eq('owner_email', user.email).single()
+    ];
+
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        const { data: businessData, error } = await attempts[i]();
+        console.log(`Attempt ${i + 1} result:`, { data: businessData, error });
+        
+        if (!error && businessData) {
+          console.log('Successfully found business data:', businessData);
+          setOwnerData(businessData);
+          return;
+        }
+      } catch (err) {
+        console.log(`Attempt ${i + 1} exception:`, err);
+      }
+    }
+    
+    console.log('No business data found for user');
+  };
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/owner/login');
+    } else {
+      setUser(user);
+      await fetchOwnerData(user);
+    }
+    setLoading(false);
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      router.push('/owner/login');
+    }
+  };
 
   const openModal = () => setIsModalOpen(true)
   const closeModal = () => {
@@ -108,6 +182,17 @@ export default function StaffManagementPage() {
       .map(n => n[0])
       .join('')
       .toUpperCase()
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading staff management...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -177,13 +262,22 @@ export default function StaffManagementPage() {
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
 
-              {/* Generate Schedule Button */}
-              <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center cursor-pointer">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="text-sm">Generate Schedule</span>
-              </button>
+              {/* User Info */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-slate-800">{ownerData?.owner_full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Admin User'}</p>
+                  <p className="text-xs text-slate-500">Owner</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                  title="Sign Out"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -237,15 +331,17 @@ export default function StaffManagementPage() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={openModal}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              <span className="text-sm">Add New Staff</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={openModal}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span className="text-sm">Add New Staff</span>
+              </button>
+            </div>
           </div>
         </div>
 
