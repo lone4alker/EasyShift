@@ -216,6 +216,16 @@ export default function OwnerDashboard() {
     }
   };
 
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
+
   // Export: fetch data -> backend AI -> generate PDF
   const handleExportReport = async () => {
     try {
