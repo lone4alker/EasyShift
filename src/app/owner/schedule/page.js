@@ -177,7 +177,7 @@ export default function ScheduleDashboardPage() {
 
   /**
    * Handle approving or rejecting a time off request
-   * FIX: Implemented robust error handling to address the {} error from Supabase.
+   * FIX: Removed manual update of 'updated_at' to resolve schema cache error. Database trigger should handle this.
    */
   const updateRequestStatus = async (requestId, newStatus) => {
     setUpdatingRequestId(requestId);
@@ -189,7 +189,7 @@ export default function ScheduleDashboardPage() {
         .from('time_off_requests')
         .update({ 
           status: newStatus,
-          updated_at: new Date().toISOString()
+          // updated_at: new Date().toISOString() // <-- REMOVED THIS LINE
         })
         .eq('request_id', requestId)
         .select();
@@ -241,6 +241,7 @@ export default function ScheduleDashboardPage() {
 
   /**
    * Handle bulk approval of all pending requests
+   * FIX: Removed manual update of 'updated_at' to resolve schema cache error. Database trigger should handle this.
    */
   const approveAllPendingRequests = async () => {
     const pendingRequests = scheduleShifts.filter(shift => shift.status?.toLowerCase() === 'pending');
@@ -263,7 +264,7 @@ export default function ScheduleDashboardPage() {
         .from('time_off_requests')
         .update({ 
           status: 'approved',
-          updated_at: new Date().toISOString()
+          // updated_at: new Date().toISOString() // <-- REMOVED THIS LINE
         })
         .in('request_id', requestIds)
         .select();
