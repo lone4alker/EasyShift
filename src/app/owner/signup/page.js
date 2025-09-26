@@ -32,8 +32,12 @@ export default function OwnerSignup() {
       sunday: true
     },
     
-    // Step 3: Staff Roles
-    selectedRoles: []
+    // Step 3: Account Creation
+    email: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+    accountPhone: ''
   })
 
   const businessTypes = [
@@ -41,10 +45,7 @@ export default function OwnerSignup() {
     'Medical Practice', 'Dental Office', 'Hotel', 'Other'
   ]
 
-  const staffRoles = [
-    'Barista', 'Cashier', 'Server', 'Cook', 'Cleaner', 'Manager',
-    'Sales Associate', 'Helper', 'Security', 'Other'
-  ]
+
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -60,17 +61,7 @@ export default function OwnerSignup() {
     }))
   }
 
-  const toggleStaffRole = (role) => {
-    setFormData(prev => {
-      const isSelected = prev.selectedRoles.includes(role)
-      return {
-        ...prev,
-        selectedRoles: isSelected
-          ? prev.selectedRoles.filter(r => r !== role)
-          : [...prev.selectedRoles, role]
-      }
-    })
-  }
+
 
   const nextStep = () => {
     if (validateCurrentStep()) {
@@ -104,8 +95,24 @@ export default function OwnerSignup() {
         }
         return true
       case 3:
-        if (formData.selectedRoles.length === 0) {
-          setError('Please select at least one staff role')
+        if (!formData.email.trim()) {
+          setError('Email is required')
+          return false
+        }
+        if (!formData.username.trim()) {
+          setError('Username is required')
+          return false
+        }
+        if (!formData.password.trim()) {
+          setError('Password is required')
+          return false
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match')
+          return false
+        }
+        if (formData.password.length < 6) {
+          setError('Password must be at least 6 characters long')
           return false
         }
         return true
@@ -198,7 +205,7 @@ export default function OwnerSignup() {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-700">Address (Optional)</label>
+          <label className="block w-max text-sm font-semibold text-slate-700">Address (Optional)</label>
           <div className="relative">
             <input
               type="text"
@@ -212,17 +219,6 @@ export default function OwnerSignup() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-700">Phone (Optional)</label>
-          <input
-            type="tel"
-            placeholder="(555) 123-4567"
-            value={formData.phone}
-            onChange={(e) => updateFormData('phone', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
-          />
         </div>
       </div>
     </div>
@@ -300,50 +296,116 @@ export default function OwnerSignup() {
   const renderStep3 = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Staff Roles</h2>
-        <p className="text-slate-600">What roles do you need to schedule?</p>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Account Creation</h2>
+        <p className="text-slate-600">Create your account to manage your business</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 mb-4">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <h3 className="text-lg font-semibold text-slate-800">
-            Staff Roles <span className="text-red-500">*</span>
-          </h3>
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-slate-700">
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="email"
+              placeholder="owner@business.com"
+              value={formData.email}
+              onChange={(e) => updateFormData('email', e.target.value)}
+              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            />
+            <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+            </svg>
+          </div>
         </div>
 
-        <p className="text-sm text-slate-600 mb-6">
-          Select the roles you need to schedule. You can add specific staff members for each role in the next step.
-        </p>
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-slate-700">
+            Username <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="business_owner"
+              value={formData.username}
+              onChange={(e) => updateFormData('username', e.target.value)}
+              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            />
+            <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {staffRoles.map(role => (
-            <label key={role} className="flex items-center space-x-3 cursor-pointer p-3 border-2 border-slate-200 rounded-lg hover:border-blue-300 transition-colors duration-200">
-              <input
-                type="checkbox"
-                checked={formData.selectedRoles.includes(role)}
-                onChange={() => toggleStaffRole(role)}
-                className="w-5 h-5 text-blue-600 bg-white border-2 border-slate-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-slate-700">{role}</span>
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-slate-700">
+            Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="password"
+              placeholder="Enter secure password"
+              value={formData.password}
+              onChange={(e) => updateFormData('password', e.target.value)}
+              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            />
+            <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-slate-700">
+            Confirm Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="password"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            />
+            <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="md:col-span-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">
+              Phone Number <span className="text-red-500">*</span>
             </label>
-          ))}
-        </div>
-
-        {formData.selectedRoles.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
-            <h4 className="text-sm font-semibold text-green-800 mb-2">Selected Roles:</h4>
-            <div className="flex flex-wrap gap-2">
-              {formData.selectedRoles.map(role => (
-                <span key={role} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                  {role}
-                </span>
-              ))}
+            <div className="relative">
+              <input
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.accountPhone}
+                onChange={(e) => updateFormData('accountPhone', e.target.value)}
+                className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+              />
+              <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
             </div>
           </div>
-        )}
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h4 className="text-sm font-semibold text-blue-800 mb-1">Account Security</h4>
+            <p className="text-sm text-blue-700">
+              Your password should be at least 6 characters long and include a mix of letters, numbers, and symbols for better security.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -404,7 +466,7 @@ export default function OwnerSignup() {
               Step {currentStep}: {
                 currentStep === 1 ? 'Business Information' :
                 currentStep === 2 ? 'Operating Schedule' :
-                'Staff Roles'
+                'Account Creation'
               }
             </p>
           </div>
