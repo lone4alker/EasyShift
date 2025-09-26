@@ -573,7 +573,7 @@ export default function ScheduleDashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                       <p className="text-lg font-medium mb-2">No time off requests found</p>
-                      <p className="text-sm">Your staff haven't submitted any time off requests yet, or check your database connection.</p>
+                      <p className="text-sm">Your staff haven&apos;t submitted any time off requests yet, or check your database connection.</p>
                     </div>
                   )}
                 </div>
