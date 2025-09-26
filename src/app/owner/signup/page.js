@@ -24,12 +24,12 @@ export default function OwnerSignup() {
     closingTime: '18:00',
     operatingDays: {
       monday: false,
-      tuesday: true,
-      wednesday: true,
+      tuesday: false,
+      wednesday: false,
       thursday: false,
       friday: false,
-      saturday: true,
-      sunday: true
+      saturday: false,
+      sunday: false
     },
     
     // Step 3: Account Creation
@@ -186,7 +186,7 @@ export default function OwnerSignup() {
             placeholder="e.g. Coffee Corner"
             value={formData.shopName}
             onChange={(e) => updateFormData('shopName', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            className="w-full px-4 py-3 text-black border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
           />
         </div>
 
@@ -195,7 +195,7 @@ export default function OwnerSignup() {
           <select
             value={formData.businessType}
             onChange={(e) => updateFormData('businessType', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            className="w-full px-4 py-3 text-black border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
           >
             <option value="">Select type</option>
             {businessTypes.map(type => (
@@ -212,7 +212,7 @@ export default function OwnerSignup() {
               placeholder="123 Main St, City"
               value={formData.address}
               onChange={(e) => updateFormData('address', e.target.value)}
-              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+              className="w-full px-4 py-3 pl-10 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none text-black transition-colors duration-200"
             />
             <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -245,7 +245,7 @@ export default function OwnerSignup() {
                 type="time"
                 value={formData.openingTime}
                 onChange={(e) => updateFormData('openingTime', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                className="w-full px-4 py-3 border-2 text-gray-600 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
               />
               <svg className="absolute right-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -260,7 +260,7 @@ export default function OwnerSignup() {
                 type="time"
                 value={formData.closingTime}
                 onChange={(e) => updateFormData('closingTime', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-blue-500 text-gray-600 focus:outline-none transition-colors duration-200"
               />
               <svg className="absolute right-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
