@@ -29,21 +29,45 @@ export default function StaffLogin() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      setError(error.message);
+      console.error('Staff login error:', error);
+      
+      // Handle specific error types
+      if (error.message.includes('Invalid login credentials')) {
+        setError(
+          <div>
+            <p>Invalid email or password. This could mean:</p>
+            <ul className="mt-2 ml-4 list-disc text-sm">
+              <li>No staff account exists with this email</li>
+              <li>Password is incorrect</li>
+              <li>Email hasn't been confirmed yet</li>
+            </ul>
+            <p className="mt-2 text-sm">
+              <a href="/debug" className="text-emerald-600 hover:underline">Check debug page</a> or{' '}
+              <a href="/staff/signup" className="text-emerald-600 hover:underline">create an account</a>
+            </p>
+          </div>
+        );
+      } else {
+        setError(error.message || 'Login failed. Please try again.');
+      }
       setLoading(false);
-      console.error('Staff login error:', error.message);
     } else {
       // Store login preference
       if (rememberMe) {
         localStorage.setItem('rememberStaff', 'true');
+        localStorage.setItem('staffEmail', email.trim());
+      } else {
+        localStorage.removeItem('rememberStaff');
+        localStorage.removeItem('staffEmail');
       }
-      router.push('/dash');
+      console.log('Staff login successful:', data.user.id);
+      router.push('/staff/dashboard');
     }
   };
 

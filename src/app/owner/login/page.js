@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
@@ -12,39 +12,168 @@ export default function OwnerLogin() {
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const router = useRouter();
+
+  // Load remembered credentials and check auth status
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push('/owner/dashboard');
+        return;
+      }
+    };
+    
+    // Load remembered email
+    const savedEmail = localStorage.getItem('ownerEmail');
+    const rememberOwner = localStorage.getItem('rememberOwner');
+    
+    if (rememberOwner === 'true' && savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+    
+    checkAuth();
+  }, [router]);
 
   // Form validation
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   
-  const isEmailValid = email.includes('@') && email.includes('.');
-  const isPasswordValid = password.length >= 6;
+  const isEmailValid = email.trim() !== '' && email.includes('@') && email.includes('.') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isPasswordValid = password.trim() !== '' && password.length >= 6;
   const isFormValid = isEmailValid && isPasswordValid;
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!isFormValid) return;
+    
+    // Validate form before proceeding
+    if (!isFormValid) {
+      if (!email.trim()) {
+        setError('Please enter your email address');
+        return;
+      }
+      if (!isEmailValid) {
+        setError('Please enter a valid email address');
+        return;
+      }
+      if (!password.trim()) {
+        setError('Please enter your password');
+        return;
+      }
+      if (!isPasswordValid) {
+        setError('Password must be at least 6 characters long');
+        return;
+      }
+      return;
+    }
     
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      console.error('Owner login error:', error.message);
-    } else {
+      if (error) {
+        console.error('Owner login error:', error);
+        
+        // Handle specific error types
+        if (error.message.includes('Invalid login credentials')) {
+          setError(
+            <div>
+              <p>Invalid email or password. This could mean:</p>
+              <ul className="mt-2 ml-4 list-disc text-sm">
+                <li>No account exists with this email</li>
+                <li>Password is incorrect</li>
+                <li>Email hasn't been confirmed yet</li>
+              </ul>
+              <div className="mt-3 space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResendConfirmation(true)}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  Resend confirmation email
+                </button>
+                <span className="text-gray-400">|</span>
+                <a href="/debug" className="text-blue-600 hover:underline text-sm">Debug page</a>
+                <span className="text-gray-400">|</span>
+                <a href="/owner/signup" className="text-blue-600 hover:underline text-sm">Create account</a>
+              </div>
+            </div>
+          );
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email and click the confirmation link before signing in.');
+        } else if (error.message.includes('Too many requests')) {
+          setError('Too many login attempts. Please wait a few minutes before trying again.');
+        } else {
+          setError(error.message || 'Login failed. Please try again.');
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Check if user data is available
+      if (!data.user) {
+        setError('Login successful but user data not found. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       // Store login preference
       if (rememberMe) {
         localStorage.setItem('rememberOwner', 'true');
+        localStorage.setItem('ownerEmail', email.trim());
+      } else {
+        localStorage.removeItem('rememberOwner');
+        localStorage.removeItem('ownerEmail');
       }
+
+      console.log('Owner login successful:', data.user.id);
+      
+      // Successful login - redirect to dashboard
       router.push('/owner/dashboard');
+      
+    } catch (err) {
+      console.error('Unexpected login error:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setLoading(false);
     }
+  };
+
+  const resendConfirmationEmail = async () => {
+    if (!email.trim() || !isEmailValid) {
+      setError('Please enter a valid email address first');
+      return;
+    }
+
+    setResendingConfirmation(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim()
+      });
+
+      if (error) {
+        setError(`Failed to resend confirmation: ${error.message}`);
+      } else {
+        setError(
+          <div className="text-green-700">
+            ✅ Confirmation email resent! Please check your email and click the confirmation link.
+          </div>
+        );
+        setShowResendConfirmation(false);
+      }
+    } catch (err) {
+      setError(`Unexpected error: ${err.message}`);
+    }
+    setResendingConfirmation(false);
   };
 
   return (
@@ -128,7 +257,9 @@ export default function OwnerLogin() {
                     className={`w-full px-4 py-3 pl-12 rounded-lg border-2 transition-all duration-200 text-black focus:outline-none ${
                       emailTouched && !isEmailValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
-                        : 'border-slate-200 focus:border-blue-500 bg-white'
+                        : email && isEmailValid
+                          ? 'border-green-300 focus:border-green-500 bg-green-50'
+                          : 'border-slate-200 focus:border-blue-500 bg-white'
                     }`}
                     required
                   />
@@ -157,7 +288,9 @@ export default function OwnerLogin() {
                     className={`w-full px-4 py-3 pl-12 pr-12 rounded-lg border-2 transition-all text-black duration-200 focus:outline-none ${
                       passwordTouched && !isPasswordValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
-                        : 'border-slate-200 focus:border-blue-500 bg-white'
+                        : password && isPasswordValid
+                          ? 'border-green-300 focus:border-green-500 bg-green-50'
+                          : 'border-slate-200 focus:border-blue-500 bg-white'
                     }`}
                     required
                   />
@@ -181,6 +314,20 @@ export default function OwnerLogin() {
                 {passwordTouched && !isPasswordValid && (
                   <p className="text-red-600 text-sm">Password must be at least 6 characters</p>
                 )}
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
               </div>
 
               {/* Submit Button */}
@@ -207,6 +354,35 @@ export default function OwnerLogin() {
               </button>
             </form>
 
+            {/* Resend Confirmation Email */}
+            {showResendConfirmation && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-blue-800">Resend Confirmation Email</h4>
+                  <button
+                    onClick={() => setShowResendConfirmation(false)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-sm text-blue-700 mb-3">
+                  Haven't received the confirmation email? We can resend it to: <strong>{email}</strong>
+                </p>
+                <button
+                  onClick={resendConfirmationEmail}
+                  disabled={resendingConfirmation || !isEmailValid}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    resendingConfirmation || !isEmailValid
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {resendingConfirmation ? 'Resending...' : 'Resend Confirmation'}
+                </button>
+              </div>
+            )}
+
             {/* Alternative Actions */}
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="text-center">
@@ -223,6 +399,21 @@ export default function OwnerLogin() {
                   </svg>
                 </Link>
               </div>
+
+              {/* Development Helper - Remove in production */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-xs text-yellow-700">
+                    <strong>Development Mode:</strong> If you're getting "Invalid credentials" errors:
+                    <ul className="mt-1 ml-4 list-disc">
+                      <li>Make sure you've completed the signup process first</li>
+                      <li>Check your email for the confirmation link from Supabase</li>
+                      <li>Verify your Supabase project is properly configured</li>
+                      <li>Check browser console for detailed error messages</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
