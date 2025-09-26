@@ -4,19 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
-import { useT } from '@/app/utils/translations';
-import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 
 export default function ScheduleDashboardPage() {
-  const { t } = useT();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ownerData, setOwnerData] = useState(null);
   const router = useRouter();
-  const [scheduleView, setScheduleView] = useState('calendarView');
+  const [scheduleView, setScheduleView] = useState('List View');
+  const [scheduleShifts, setScheduleShifts] = useState([]);
+  
   const [scheduleData, setScheduleData] = useState({
-    totalShifts: 4,
-    pendingApproval: 2,
+    totalShifts: 0,
+    pendingApproval: 0,
     totalHours: 30,
     estPayroll: 450,
     overtimeHours: 2,
@@ -25,71 +24,144 @@ export default function ScheduleDashboardPage() {
       { name: 'Mike Chen', role: 'Cashier', rate: 14, hours: 14 },
     ],
   });
-  const [staff, setStaff] = useState([
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      role: 'Barista',
-      email: 'sarah@email.com',
-      pendingApproval: false,
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      role: 'Cashier',
-      email: 'mike@email.com',
-      pendingApproval: true,
-    },
-  ]);
+
+  // State for handling request updates
+  const [updatingRequestId, setUpdatingRequestId] = useState(null);
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
+
+  /**
+   * Fetches data from staff_members and time_off_requests tables based on your schema
+   */
+  const fetchScheduleData = async (businessId) => {
+    console.log('Attempting to fetch schedule and staff data for business ID:', businessId);
+    if (!businessId) {
+      console.error("Business ID is missing. Cannot fetch schedule data.");
+      return;
+    }
+    
+    try {
+      // 1. Fetch Staff Members - using correct column names from your schema
+      const { data: members, error: staffError } = await supabase
+        .from('staff_members')
+        .select('staff_id, first_name, last_name, role, business_id')
+        .eq('business_id', businessId);
+        
+      if (staffError) throw staffError;
+
+      // Create a map for quick staff lookup using staff_id
+      const staffMap = members.reduce((acc, member) => {
+        acc[member.staff_id] = { 
+          name: `${member.first_name} ${member.last_name}`,
+          role: member.role 
+        };
+        return acc;
+      }, {});
+      console.log('Fetched staff map:', staffMap);
+
+      // 2. Fetch Time Off Requests - using correct table and column names
+      // First try to get all time off requests to see what's available
+      console.log('Staff IDs to filter by:', Object.keys(staffMap));
+      
+      const { data: requests, error: requestsError } = await supabase
+        .from('time_off_requests')
+        .select('request_id, staff_id, start_datetime, end_datetime, status, reason, created_at')
+        .in('staff_id', Object.keys(staffMap)) // Use .in() instead of .eq() for array filtering
+        .order('created_at', { ascending: false });
+
+      if (requestsError) throw requestsError;
+      console.log('Fetched time_off_requests:', requests);
+      
+      // 3. Transform and Merge Data
+      const formattedShifts = requests.map(request => {
+        const staffInfo = staffMap[request.staff_id] || { 
+          name: 'Unknown Staff', 
+          role: 'N/A' 
+        };
+        
+        return {
+          id: request.request_id,
+          name: staffInfo.name,
+          role: staffInfo.role,
+          startTime: request.start_datetime,
+          endTime: request.end_datetime,
+          status: request.status || 'pending',
+          reason: request.reason || 'Time off request',
+          createdAt: request.created_at
+        };
+      });
+      
+      setScheduleShifts(formattedShifts);
+      console.log('Successfully fetched and formatted requests:', formattedShifts);
+      
+      // Update KPIs based on fetched data
+      const pending = formattedShifts.filter(s => s.status?.toLowerCase() === 'pending').length;
+      setScheduleData(prev => ({
+          ...prev,
+          totalShifts: formattedShifts.length,
+          pendingApproval: pending,
+      }));
+
+    } catch (err) {
+      console.error('Error fetching schedule data:', err);
+      
+      // Fallback: try a simpler query to see what data exists
+      try {
+        console.log('Trying fallback queries...');
+        
+        // Check if we have any staff members at all
+        const { data: allStaff, error: allStaffError } = await supabase
+          .from('staff_members')
+          .select('*')
+          .eq('business_id', businessId);
+          
+        console.log('All staff for business:', allStaff, 'Error:', allStaffError);
+        
+        // Check if we have any time off requests at all
+        const { data: allRequests, error: allRequestsError } = await supabase
+          .from('time_off_requests')
+          .select('*');
+          
+        console.log('All time off requests:', allRequests, 'Error:', allRequestsError);
+        
+      } catch (fallbackErr) {
+        console.error('Fallback queries also failed:', fallbackErr);
+      }
+    }
+  };
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
+    let businessData = null;
     
-    // Try to fetch all business records first to debug
-    try {
-      const { data: allBusinesses, error: listError } = await supabase
-        .from('businesses')
-        .select('*')
-        .limit(5);
-      
-      console.log('All businesses (first 5):', allBusinesses);
-      console.log('List error:', listError);
-    } catch (err) {
-      console.log('Error fetching businesses list:', err);
-    }
-
-    // Try multiple approaches to find the owner data
+    // Try different approaches to find the business - using correct column names
     const attempts = [
-      // Attempt 1: owner_id field
       () => supabase.from('businesses').select('*').eq('owner_id', user.id).single(),
-      // Attempt 2: id field
-      () => supabase.from('businesses').select('*').eq('id', user.id).single(),
-      // Attempt 3: user_id field (common alternative)
-      () => supabase.from('businesses').select('*').eq('user_id', user.id).single(),
-      // Attempt 4: Get first business record for this user's email
+      () => supabase.from('businesses').select('*').eq('business_id', user.id).single(),
       () => supabase.from('businesses').select('*').eq('owner_email', user.email).single()
     ];
 
     for (let i = 0; i < attempts.length; i++) {
       try {
-        const { data: businessData, error } = await attempts[i]();
-        console.log(`Attempt ${i + 1} result:`, { data: businessData, error });
-        
-        if (!error && businessData) {
-          console.log('Successfully found business data:', businessData);
-          setOwnerData(businessData);
-          return;
+        const { data: result, error } = await attempts[i]();
+        if (!error && result) {
+          businessData = result;
+          break;
         }
       } catch (err) {
         console.log(`Attempt ${i + 1} exception:`, err);
       }
     }
     
-    console.log('No business data found for user');
+    if (businessData) {
+      setOwnerData(businessData);
+      // Use the correct business ID column
+      await fetchScheduleData(businessData.business_id); 
+    } else {
+      console.log('No business data found for user');
+    }
   };
 
   const checkAuth = async () => {
@@ -98,9 +170,140 @@ export default function ScheduleDashboardPage() {
       router.push('/owner/login');
     } else {
       setUser(user);
-      await fetchOwnerData(user);
+      await fetchOwnerData(user); 
     }
     setLoading(false);
+  };
+
+  /**
+   * Handle approving or rejecting a time off request
+   * FIX: Implemented robust error handling to address the {} error from Supabase.
+   */
+  const updateRequestStatus = async (requestId, newStatus) => {
+    setUpdatingRequestId(requestId);
+    
+    try {
+      console.log(`Updating request ${requestId} to status: ${newStatus}`);
+      
+      const { data, error } = await supabase
+        .from('time_off_requests')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('request_id', requestId)
+        .select();
+
+      if (error) {
+        console.error('Error updating request status:', error);
+        
+        // --- FIX START ---
+        // Safely extract error message or use a fallback for RLS issues
+        const errorMessage = error.message 
+          ? error.message 
+          : 'Unknown database error (likely RLS violation). Check Supabase policies.';
+          
+        alert(`Error updating request: ${errorMessage}`);
+        // --- FIX END ---
+        
+        return;
+      }
+
+      console.log('Successfully updated request:', data);
+
+      // Update local state to reflect the change
+      const updatedShifts = scheduleShifts.map(shift => 
+        shift.id === requestId 
+          ? { ...shift, status: newStatus }
+          : shift
+      );
+      
+      setScheduleShifts(updatedShifts);
+
+      // Update the pending approval count using the new array
+      const pending = updatedShifts.filter(s => s.status?.toLowerCase() === 'pending').length;
+      
+      setScheduleData(prev => ({
+        ...prev,
+        pendingApproval: pending
+      }));
+
+      // Show success message (you can replace with toast notification)
+      alert(`Request ${newStatus} successfully!`);
+
+    } catch (error) {
+      console.error('Unexpected error updating request:', error);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setUpdatingRequestId(null);
+    }
+  };
+
+  /**
+   * Handle bulk approval of all pending requests
+   */
+  const approveAllPendingRequests = async () => {
+    const pendingRequests = scheduleShifts.filter(shift => shift.status?.toLowerCase() === 'pending');
+    
+    if (pendingRequests.length === 0) {
+      alert('No pending requests to approve.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to approve all ${pendingRequests.length} pending requests?`)) {
+      return;
+    }
+
+    setUpdatingRequestId('bulk');
+    
+    try {
+      const requestIds = pendingRequests.map(request => request.id);
+      
+      const { data, error } = await supabase
+        .from('time_off_requests')
+        .update({ 
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .in('request_id', requestIds)
+        .select();
+
+      if (error) {
+        console.error('Error bulk approving requests:', error);
+        
+        // Safely extract error message or use a fallback
+        const errorMessage = error.message 
+          ? error.message 
+          : 'Unknown database error (likely RLS violation). Check Supabase policies.';
+        
+        alert(`Error approving requests: ${errorMessage}`);
+        return;
+      }
+
+      console.log('Successfully approved all requests:', data);
+
+      // Update local state
+      const updatedShifts = scheduleShifts.map(shift => 
+        requestIds.includes(shift.id)
+          ? { ...shift, status: 'approved' }
+          : shift
+      );
+
+      setScheduleShifts(updatedShifts);
+
+      setScheduleData(prev => ({
+        ...prev,
+        pendingApproval: 0
+      }));
+
+      alert(`Successfully approved ${pendingRequests.length} requests!`);
+
+    } catch (error) {
+      console.error('Unexpected error bulk approving requests:', error);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setUpdatingRequestId(null);
+    }
   };
 
   const handleSignOut = async () => {
@@ -117,20 +320,47 @@ export default function ScheduleDashboardPage() {
       .join('')
       .toUpperCase();
   };
+  
+  const formatTime = (isoTime) => {
+    if (!isoTime) return 'N/A';
+    try {
+      return new Date(isoTime).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+
+  const formatDate = (isoTime) => {
+    if (!isoTime) return 'N/A';
+    try {
+      return new Date(isoTime).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return 'N/A';
+    }
+  };
 
   const renderScheduleSubView = () => {
     switch (scheduleView) {
-      case 'calendarView':
+      case 'Calendar View':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">{t('schedule.calendar.scheduleCalendar')}</h3>
+              <h3 className="text-xl font-semibold text-slate-800">Schedule Calendar</h3>
               <div className="flex items-center space-x-4">
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
-                  <option>{t('schedule.calendar.allStaff')}</option>
+                  <option>All Staff</option>
                 </select>
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
-                  <option>{t('schedule.calendar.allRoles')}</option>
+                  <option>All Roles</option>
                 </select>
                 <div className="flex items-center space-x-2">
                   <button className="text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors">
@@ -155,53 +385,211 @@ export default function ScheduleDashboardPage() {
               <div className="grid grid-cols-7 gap-2 min-h-48">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="p-4 bg-white border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 text-sm hover:border-blue-300 transition-colors">
-                    {t('schedule.calendar.noShifts')}
+                    No shifts
                   </div>
                 ))}
               </div>
             </div>
           </div>
         );
-      case 'listView':
+
+      case 'List View':
+        const pendingShifts = scheduleShifts.filter(shift => shift.status?.toLowerCase() === 'pending').length;
+        
         return (
           <div>
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-xl mb-6 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-yellow-200 rounded-lg">
-                  <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                  </svg>
-                </div>
-                <span className="font-medium">{scheduleData.pendingApproval} {t('schedule.shifts.pendingApprovalAction')}</span>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-800">Staff Time Off Requests</h3>
+                <p className="text-sm text-slate-600 mt-1">Review and approve time-off requests from your staff</p>
               </div>
-              <button className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 cursor-pointer">
-                {t('schedule.shifts.publishAllShifts')}
-              </button>
+              <div className="flex items-center space-x-3">
+                <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
+                  <option value="">All Staff</option>
+                </select>
+              </div>
             </div>
-            <div className="space-y-4">
-              {staff.map(member => (
-                <div key={member.id} className="p-6 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between hover:shadow-md transition-shadow">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-                      {getInitials(member.name)}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{member.name}</div>
-                      <div className="text-sm text-slate-600">{member.role} • 08:00 - 16:00</div>
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+
+            {/* Pending Requests Alert */}
+            {pendingShifts > 0 && (
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-xl mb-6 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-yellow-200 rounded-lg">
+                    <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
-                    {t('schedule.shifts.approved')}
-                  </span>
+                  </div>
+                  <span className="font-medium">{pendingShifts} time off request(s) pending your approval</span>
                 </div>
-              ))}
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={approveAllPendingRequests}
+                    disabled={updatingRequestId === 'bulk'}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 cursor-pointer flex items-center space-x-2"
+                  >
+                    {updatingRequestId === 'bulk' && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>Approve All</span>
+                  </button>
+                  <button className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 cursor-pointer">
+                    Review All
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Staff Time Off Requests List */}
+            <div className="space-y-4">
+              {scheduleShifts.length > 0 ? (
+                scheduleShifts.map(request => {
+                  const startTime = new Date(request.startTime);
+                  const endTime = new Date(request.endTime);
+                  const durationHours = ((endTime - startTime) / (1000 * 60 * 60)).toFixed(1);
+                  const requestDate = formatDate(request.startTime);
+                  
+                  return (
+                    <div key={request.id} className="p-6 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {/* Staff Avatar */}
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                            {getInitials(request.name)}
+                          </div>
+                          
+                          {/* Request Details */}
+                          <div>
+                            <div className="flex items-center space-x-3">
+                              <h4 className="font-semibold text-slate-900">{request.name}</h4>
+                              <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded-full">
+                                {request.role}
+                              </span>
+                            </div>
+                            <div className="text-sm text-slate-600 mt-1">
+                              <span className="font-medium">{requestDate}</span> • {formatTime(request.startTime)} - {formatTime(request.endTime)} • {durationHours}h
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              {request.reason} • Submitted {formatDate(request.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Status and Actions */}
+                        <div className="flex items-center space-x-3">
+                          {/* Status Badge */}
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            request.status?.toLowerCase() === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                              : request.status?.toLowerCase() === 'approved'
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : request.status?.toLowerCase() === 'rejected'
+                              ? 'bg-red-100 text-red-800 border border-red-200'
+                              : 'bg-green-100 text-green-800 border border-green-200'
+                          }`}>
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d={
+                                request.status?.toLowerCase() === 'pending'
+                                  ? "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"
+                                  : request.status?.toLowerCase() === 'rejected'
+                                  ? "M6 18L18 6M6 6l12 12"
+                                  : "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              } />
+                            </svg>
+                            {request.status || 'Approved'}
+                          </span>
+                          
+                          {/* Action Buttons - Only show for pending requests */}
+                          {request.status?.toLowerCase() === 'pending' && (
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => updateRequestStatus(request.id, 'approved')}
+                                disabled={updatingRequestId === request.id}
+                                className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-100 border border-green-300 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center space-x-1"
+                              >
+                                {updatingRequestId === request.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-700"></div>
+                                    <span>Processing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                    <span>Approve</span>
+                                  </>
+                                )}
+                              </button>
+                              <button 
+                                onClick={() => updateRequestStatus(request.id, 'rejected')}
+                                disabled={updatingRequestId === request.id}
+                                className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center space-x-1"
+                              >
+                                {updatingRequestId === request.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-700"></div>
+                                    <span>Processing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    <span>Reject</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* More Options Menu */}
+                          <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center p-12 bg-white rounded-xl text-slate-500 border-dashed border-2">
+                  {loading ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                      <p>Loading time off requests...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <svg className="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <p className="text-lg font-medium mb-2">No time off requests found</p>
+                      <p className="text-sm">Your staff haven't submitted any time off requests yet, or check your database connection.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+            
+            {/* Summary Footer */}
+            {scheduleShifts.length > 0 && (
+              <div className="mt-6 p-4 bg-slate-100 rounded-lg text-center text-sm text-slate-600">
+                Showing {scheduleShifts.length} time off request(s) • {pendingShifts} pending approval • {scheduleShifts.length - pendingShifts} processed
+              </div>
+            )}
           </div>
         );
-      case 'payroll':
+
+      case 'Payroll':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -243,13 +631,14 @@ export default function ScheduleDashboardPage() {
             </div>
           </div>
         );
-      case 'aiInsights':
+
+      case 'AI Insights':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">{t('schedule.ai.aiRecommendations')}</h3>
+              <h3 className="text-xl font-semibold text-slate-800">AI Recommendations</h3>
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                3 {t('schedule.ai.insightsAvailable')}
+                3 insights available
               </span>
             </div>
             <div className="space-y-4">
@@ -258,13 +647,13 @@ export default function ScheduleDashboardPage() {
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded-xl bg-blue-100">
                       <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-blue-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.staffingOptimization')}</span>
+                      <span className="font-semibold text-slate-800">Staffing Optimization</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 ml-2">
-                        {t('schedule.ai.highPriority')}
+                        high priority
                       </span>
                     </div>
                   </div>
@@ -284,70 +673,10 @@ export default function ScheduleDashboardPage() {
                   </div>
                 </div>
               </div>
-              
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-yellow-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-yellow-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12s-1.536-.219-2.121-.341c-1.172-.879-1.172-2.303 0-3.182C10.464 8.781 11.232 9 12 9s1.536-.219 2.121-.341c1.172-.879 3.071-.879 4.242 0l.879.659M9 12h6" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.costOptimization')}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 ml-2">
-                        {t('schedule.ai.mediumPriority')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Reducing Mike&apos;s Friday shift by 1 hour could save $14 weekly while maintaining adequate coverage during slower periods</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                      {t('schedule.ai.applySuggestion')}
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-green-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-green-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.efficiencyReport')}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 ml-2">
-                        {t('schedule.ai.lowPriority')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Current schedule efficiency is 94% - well optimized for business hours and staff availability. No immediate changes needed.</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         );
+
       default:
         return null;
     }
@@ -358,7 +687,7 @@ export default function ScheduleDashboardPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">{t('schedule.loading')}</p>
+          <p className="text-slate-600">Loading schedule...</p>
         </div>
       </div>
     );
@@ -392,7 +721,7 @@ export default function ScheduleDashboardPage() {
                   </svg>
                 </div>
                 <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {t('appName')}
+                  ShiftEasy
                 </h1>
               </Link>
 
@@ -402,46 +731,34 @@ export default function ScheduleDashboardPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                   </svg>
-                  <span className="text-sm">{t('navigation.dashboard')}</span>
+                  <span className="text-sm">Dashboard</span>
                 </Link>
                 
                 <Link href="/owner/staff-management" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <span className="text-sm">{t('navigation.staffManagement')}</span>
+                  <span className="text-sm">Staff Management</span>
                 </Link>
                 
                 <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
                   </svg>
-                  <span className="text-sm">{t('navigation.schedule')}</span>
+                  <span className="text-sm">Schedule</span>
                 </div>
 
                 <Link href="/owner/analytics" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  <span className="text-sm">{t('navigation.analytics')}</span>
+                  <span className="text-sm">Analytics</span>
                 </Link>
               </div>
             </div>
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
-              {/* Language Switcher */}
-              <LanguageSwitcher />
-              {/* Generate Schedule Button */}
-              {/* <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center cursor-pointer">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </svg>
-                <span className="text-sm">Generate Schedule</span>
-              </button> */}
-
               {/* User Info */}
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden sm:block">
@@ -451,7 +768,7 @@ export default function ScheduleDashboardPage() {
                 <button
                   onClick={handleSignOut}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  title={t('buttons.signOut')}
+                  title="Sign Out"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -470,7 +787,7 @@ export default function ScheduleDashboardPage() {
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
             </svg>
-            <span className="text-xs">{t('navigation.home')}</span>
+            <span className="text-xs">Home</span>
           </Link>
           <span className="text-slate-400">/</span>
           <Link href="/owner/dashboard" className="text-slate-500 hover:text-blue-600 transition-colors duration-200">
@@ -493,20 +810,20 @@ export default function ScheduleDashboardPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-1">{t('schedule.title')}</h2>
-                <p className="text-slate-600 text-xs">{t('schedule.subtitle')}</p>
+                <h2 className="text-xl font-bold text-slate-800 mb-1">Schedule Dashboard</h2>
+                <p className="text-slate-600 text-xs">Manage and optimize your staff schedules</p>
                 <div className="flex items-center mt-3 space-x-3">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {scheduleData.totalShifts} {t('schedule.shifts.shiftsThisWeek')}
+                    {scheduleData.totalShifts} Requests This Week
                   </span>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                     </svg>
-                    {scheduleData.pendingApproval} {t('schedule.shifts.pendingApproval')}
+                    {scheduleData.pendingApproval} Pending Approval
                   </span>
                 </div>
               </div>
@@ -516,25 +833,26 @@ export default function ScheduleDashboardPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
-                <span className="text-sm">{t('schedule.generateAiSchedule')}</span>
+                <span className="text-sm">Generate AI Schedule</span>
               </button>
             </div>
           </div>
         </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-blue-100 rounded-xl">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.totalShifts}</p>
-              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.totalShifts')}</p>
-              <p className="text-xs text-green-600 mt-1">↗ {t('schedule.shifts.thisWeek')}</p>
+              <p className="text-sm font-medium text-slate-600">Time Off Requests</p>
+              <p className="text-xs text-green-600 mt-1">↗ This week</p>
             </div>
           </div>
 
@@ -548,8 +866,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.pendingApproval}</p>
-              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.pendingApproval')}</p>
-              <p className="text-xs text-yellow-600 mt-1">↗ {t('schedule.shifts.requiresAction')}</p>
+              <p className="text-sm font-medium text-slate-600">Pending Approval</p>
+              <p className="text-xs text-yellow-600 mt-1">↗ Requires action</p>
             </div>
           </div>
 
@@ -563,8 +881,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.totalHours.toFixed(1)}</p>
-              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.totalHours')}</p>
-              <p className="text-xs text-green-600 mt-1">↗ {t('schedule.shifts.scheduled')}</p>
+              <p className="text-sm font-medium text-slate-600">Total Hours</p>
+              <p className="text-xs text-green-600 mt-1">↗ Scheduled</p>
             </div>
           </div>
 
@@ -578,19 +896,17 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">${scheduleData.estPayroll.toFixed(0)}</p>
-              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.estimatedPayroll')}</p>
-              <p className="text-xs text-blue-600 mt-1">↗ {t('schedule.shifts.weeklyEstimate')}</p>
+              <p className="text-sm font-medium text-slate-600">Est. Payroll</p>
+              <p className="text-xs text-blue-600 mt-1">↗ Weekly estimate</p>
             </div>
           </div>
         </div>
+
         {/* Schedule View Tabs */}
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 mb-8">
           <div className="border-b border-slate-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {[t('schedule.views.calendarView'), t('schedule.views.listView'), t('schedule.views.payroll'), t('schedule.views.aiInsights')].map((viewLabel, index) => {
-                const viewKeys = ['calendarView', 'listView', 'payroll', 'aiInsights'];
-                const view = viewKeys[index];
-                return (
+              {['Calendar View', 'List View', 'Payroll', 'AI Insights'].map(view => (
                 <button
                   key={view}
                   onClick={() => setScheduleView(view)}
@@ -600,10 +916,9 @@ export default function ScheduleDashboardPage() {
                       : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  {viewLabel}
+                  {view}
                 </button>
-              );
-              })}
+              ))}
             </nav>
           </div>
           {/* Render sub-view */}
