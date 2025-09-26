@@ -282,16 +282,6 @@ export default function OwnerDashboard() {
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
-              {/* Generate Schedule Button */}
-              <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center cursor-pointer">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </svg>
-                <span className="text-sm">Generate Schedule</span>
-              </button>
-
               {/* User Info */}
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden sm:block">
