@@ -1,0 +1,48 @@
+{
+  "appName": "ShiftEasy",
+  "buttons": {
+    "signOut": "Cerrar Sesión",
+    "exportReport": "Exportar Informe",
+    "viewAll": "Ver Todo",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "add": "Agregar",
+    "submit": "Enviar"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "dashboard": "Panel",
+    "staffManagement": "Gestión de Personal",
+    "schedule": "Horario",
+    "analytics": "Análisis",
+    "settings": "Configuración"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "online": "En línea",
+    "offline": "Fuera de línea",
+    "success": "Éxito",
+    "error": "Error"
+  },
+  "common": {
+    "welcome": "Bienvenido",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "lastWeek": "Semana Pasada",
+    "lastMonth": "Mes Pasado",
+    "thisMonth": "Este Mes",
+    "total": "Total",
+    "name": "Nombre",
+    "email": "Correo",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "title": "मालिक डैशबोर्ड",
+  "welcome": "वापसी पर स्वागत है, {{name}}! आज आपके व्यवसाय के साथ यह हो रहा है",
+  "breadcrumb": {
+    "home": "घर",
+    "ownerDashboard": "मालिक डैशबोर्ड"
+  },
+  "stats": {
+    "totalStaff": "कुल स्टाफ",
+    "activeStaff": "सक्रिय स्टाफ",
+    "todaysAttendance": "आज की उपस्थिति",
+    "monthlyRevenue": "मासिक आय",
+    "activeRate": "सक्रिय दर",
+    "onTime": "समय पर",
+    "fromLastMonth": "पिछले महीने से"
+  },
+  "quickActions": {
+    "title": "त्वरित कार्य",
+    "staffManagement": "स्टाफ प्रबंधन",
+    "manageTeam": "टीम प्रबंधन",
+    "analytics": "विश्लेषण",
+    "viewReports": "रिपोर्ट देखें",
+    "attendance": "उपस्थिति",
+    "trackTime": "समय ट्रैक करें",
+    "settings": "सेटिंग्स",
+    "configure": "कॉन्फ़िगर करें"
+  },
+  "recentActivity": {
+    "title": "हाल की गतिविधि",
+    "newStaffAdded": "नया स्टाफ सदस्य जोड़ा गया",
+    "staffJoined": "{{name}} {{position}} के रूप में शामिल हुआ",
+    "perfectAttendance": "पूर्ण उपस्थिति",
+    "allStaffCheckedIn": "सभी स्टाफ आज चेक इन हुए",
+    "monthlyReport": "मासिक रिपोर्ट तैयार की गई",
+    "revenueUp": "इस महीने आय {{percentage}}% बढ़ी",
+    "timeAgo": {
+      "hoursAgo": "{{count}} घंटे पहले",
+      "yesterday": "कल"
+    }
+  },
+  "performance": {
+    "title": "प्रदर्शन अवलोकन",
+    "attendanceRate": "उपस्थिति दर",
+    "monthlyAverage": "मासिक औसत",
+    "staffRating": "स्टाफ रेटिंग",
+    "outOfFive": "5.0 सितारों में से",
+    "revenueGrowth": "आय वृद्धि",
+    "vsLastMonth": "पिछले महीने से"
+  },
+  "systemStatus": {
+    "allSystemsActive": "सभी सिस्टम सक्रिय",
+    "lastUpdated": "अंतिम अपडेट"
+  },
+  "loadingMessage": "डैशबोर्ड लोड हो रहा है...",
+  "quickActionItems": {
+    "staffManagement": {
+      "title": "स्टाफ प्रबंधन",
+      "subtitle": "टीम प्रबंधन"
+    },
+    "analytics": {
+      "title": "विश्लेषण",
+      "subtitle": "रिपोर्ट देखें"
+    },
+    "attendance": {
+      "title": "उपस्थिति",
+      "subtitle": "समय ट्रैक करें"
+    },
+    "settings": {
+      "title": "सेटिंग्स",
+      "subtitle": "कॉन्फ़िगर करें"
+    }
+  }
+}

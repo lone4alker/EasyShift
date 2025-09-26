@@ -1,0 +1,48 @@
+{
+  "appName": "ShiftEasy",
+  "buttons": {
+    "signOut": "Sign Out",
+    "exportReport": "Export Report",
+    "viewAll": "View All",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "submit": "Submit"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "staffManagement": "Staff Management",
+    "schedule": "Schedule",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  },
+  "status": {
+    "loading": "Loading...",
+    "active": "Active",
+    "inactive": "Inactive",
+    "online": "Online",
+    "offline": "Offline",
+    "success": "Success",
+    "error": "Error"
+  },
+  "common": {
+    "welcome": "Welcome",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last Week",
+    "lastMonth": "Last Month",
+    "thisMonth": "This Month",
+    "total": "Total",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort"
+  }
+}

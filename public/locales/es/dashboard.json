@@ -1,0 +1,55 @@
+{
+  "title": "Panel del Propietario",
+  "welcome": "¡Bienvenido de vuelta, {{name}}! Esto es lo que está pasando con tu negocio hoy",
+  "breadcrumb": {
+    "home": "Inicio",
+    "ownerDashboard": "Panel del Propietario"
+  },
+  "stats": {
+    "totalStaff": "Personal Total",
+    "activeStaff": "Personal Activo",
+    "todaysAttendance": "Asistencia de Hoy",
+    "monthlyRevenue": "Ingresos Mensuales",
+    "activeRate": "tasa activa",
+    "onTime": "A tiempo",
+    "fromLastMonth": "del mes pasado"
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "staffManagement": "Gestión de Personal",
+    "manageTeam": "Gestionar equipo",
+    "analytics": "Análisis",
+    "viewReports": "Ver informes",
+    "attendance": "Asistencia",
+    "trackTime": "Rastrear tiempo",
+    "settings": "Configuración",
+    "configure": "Configurar"
+  },
+  "recentActivity": {
+    "title": "Actividad Reciente",
+    "newStaffAdded": "Nuevo miembro del personal agregado",
+    "staffJoined": "{{name}} se unió como {{position}}",
+    "perfectAttendance": "Asistencia perfecta",
+    "allStaffCheckedIn": "Todo el personal registrado hoy",
+    "monthlyReport": "Informe mensual generado",
+    "revenueUp": "Ingresos aumentaron {{percentage}}% este mes",
+    "timeAgo": {
+      "hoursAgo": "Hace {{count}} horas",
+      "yesterday": "Ayer"
+    }
+  },
+  "performance": {
+    "title": "Resumen de Rendimiento",
+    "attendanceRate": "Tasa de Asistencia",
+    "monthlyAverage": "Promedio mensual",
+    "staffRating": "Calificación del Personal",
+    "outOfFive": "De 5.0 estrellas",
+    "revenueGrowth": "Crecimiento de Ingresos",
+    "vsLastMonth": "vs mes pasado"
+  },
+  "systemStatus": {
+    "allSystemsActive": "Todos los Sistemas Activos",
+    "lastUpdated": "Última Actualización"
+  },
+  "loadingMessage": "Cargando panel..."
+}

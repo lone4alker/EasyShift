@@ -4,9 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
-// import OwnerNavbar from '../../../../components/ui/OwnerNavbar';
+import { useT, formatTime } from '@/app/utils/translations';
+import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
+// import OwnerNavbar from '../..                <span className=\"text-sm\">{t('buttons.exportReport')}</span>../../components/ui/OwnerNavbar';
 
 export default function OwnerDashboard() {
+  const { t } = useT();
+  const { t: tDashboard } = useT('dashboard');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ownerData, setOwnerData] = useState(null);
@@ -208,7 +212,7 @@ export default function OwnerDashboard() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading dashboard...</p>
+          <p className="text-slate-600">{tDashboard('loadingMessage')}</p>
         </div>
       </div>
     );
@@ -234,7 +238,7 @@ export default function OwnerDashboard() {
       {/* Enhanced Modern Navigation */}
       <nav className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-lg">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between overflow-visible">
             {/* Logo and Brand */}
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
@@ -244,7 +248,7 @@ export default function OwnerDashboard() {
                   </svg>
                 </div>
                 <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  ShiftEasy
+                  {t('appName')}
                 </h1>
               </Link>
 
@@ -254,34 +258,37 @@ export default function OwnerDashboard() {
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                   </svg>
-                  <span className="text-sm">Dashboard</span>
+                  <span className="text-sm">{t('navigation.dashboard')}</span>
                 </div>
                 
                 <Link href="/owner/staff-management" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <span className="text-sm">Staff Management</span>
+                  <span className="text-sm">{t('navigation.staffManagement')}</span>
                 </Link>
                 
                 <Link href="/owner/schedule" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
                   </svg>
-                  <span className="text-sm">Schedule</span>
+                  <span className="text-sm">{t('navigation.schedule')}</span>
                 </Link>
 
                 <Link href="/owner/analytics" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  <span className="text-sm">Analytics</span>
+                  <span className="text-sm">{t('navigation.analytics')}</span>
                 </Link>
               </div>
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 overflow-visible">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+              
               {/* User Info */}
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden sm:block">
@@ -291,7 +298,7 @@ export default function OwnerDashboard() {
                 <button
                   onClick={handleSignOut}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  title="Sign Out"
+                  title={t('buttons.signOut')}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -310,10 +317,10 @@ export default function OwnerDashboard() {
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs">Home</span>
+            <span className="text-xs">{tDashboard('breadcrumb.home')}</span>
           </Link>
           <span className="text-slate-400">/</span>
-          <span className="text-slate-700 font-medium">Owner Dashboard</span>
+          <span className="text-slate-700 font-medium">{tDashboard('breadcrumb.ownerDashboard')}</span>
         </nav>
       </div>
 
@@ -329,24 +336,20 @@ export default function OwnerDashboard() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-1">Owner Dashboard</h2>
-                <p className="text-slate-600 text-xs">Welcome back, {ownerData?.owner_full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Admin'}! Here's what's happening with your business today</p>
+                <h2 className="text-xl font-bold text-slate-800 mb-1">{tDashboard('title')}</h2>
+                <p className="text-slate-600 text-xs">{tDashboard('welcome', { name: ownerData?.owner_full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Admin' })}</p>
                 <div className="flex items-center mt-3 space-x-3">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    All Systems Active
+                    {tDashboard('systemStatus.allSystemsActive')}
                   </span>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Last Updated: {new Date().toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: true
-                    })}
+                    {tDashboard('systemStatus.lastUpdated')}: {formatTime()}
                   </span>
                 </div>
               </div>
@@ -375,7 +378,7 @@ export default function OwnerDashboard() {
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalStaff}</p>
-                <p className="text-sm font-medium text-slate-600">Total Staff</p>
+                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.totalStaff')}</p>
                 <p className="text-xs text-green-600 mt-1">↗ +2 this month</p>
               </div>
             </div>
@@ -391,8 +394,8 @@ export default function OwnerDashboard() {
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 mb-1">{stats.activeStaff}</p>
-                <p className="text-sm font-medium text-slate-600">Active Staff</p>
-                <p className="text-xs text-green-600 mt-1">↗ 92% active rate</p>
+                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.activeStaff')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ 92% {tDashboard('stats.activeRate')}</p>
               </div>
             </div>
 
@@ -407,8 +410,8 @@ export default function OwnerDashboard() {
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 mb-1">{stats.todaysAttendance}</p>
-                <p className="text-sm font-medium text-slate-600">Today's Attendance</p>
-                <p className="text-xs text-green-600 mt-1">↗ On time: 95%</p>
+                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.todaysAttendance')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ {tDashboard('stats.onTime')}: 95%</p>
               </div>
             </div>
 
@@ -423,8 +426,8 @@ export default function OwnerDashboard() {
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 mb-1">₹{stats.monthlyRevenue.toLocaleString()}</p>
-                <p className="text-sm font-medium text-slate-600">Monthly Revenue</p>
-                <p className="text-xs text-green-600 mt-1">↗ +15% from last month</p>
+                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.monthlyRevenue')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ +15% {tDashboard('stats.fromLastMonth')}</p>
               </div>
             </div>
           </div>
@@ -434,7 +437,7 @@ export default function OwnerDashboard() {
             {/* Management Actions */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">Quick Actions</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">{tDashboard('quickActions.title')}</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <Link
                     href="/owner/staff-management"
@@ -446,8 +449,8 @@ export default function OwnerDashboard() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Staff Management</p>
-                      <p className="text-xs text-blue-600">Manage team</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.staffManagement.title', 'Staff Management')}</p>
+                      <p className="text-xs text-blue-600">{tDashboard('quickActionItems.staffManagement.subtitle', 'Manage team')}</p>
                     </div>
                   </Link>
 
@@ -458,8 +461,8 @@ export default function OwnerDashboard() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Analytics</p>
-                      <p className="text-xs text-green-600">View reports</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.analytics.title', 'Analytics')}</p>
+                      <p className="text-xs text-green-600">{tDashboard('quickActionItems.analytics.subtitle', 'View reports')}</p>
                     </div>
                   </button>
 
@@ -470,8 +473,8 @@ export default function OwnerDashboard() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Attendance</p>
-                      <p className="text-xs text-indigo-600">Track time</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.attendance.title', 'Attendance')}</p>
+                      <p className="text-xs text-indigo-600">{tDashboard('quickActionItems.attendance.subtitle', 'Track time')}</p>
                     </div>
                   </button>
 
@@ -483,8 +486,8 @@ export default function OwnerDashboard() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Settings</p>
-                      <p className="text-xs text-purple-600">Configure</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.settings.title', 'Settings')}</p>
+                      <p className="text-xs text-purple-600">{tDashboard('quickActionItems.settings.subtitle', 'Configure')}</p>
                     </div>
                   </button>
                 </div>
@@ -494,8 +497,8 @@ export default function OwnerDashboard() {
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Recent Activity</h2>
-                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">View All</button>
+                <h2 className="text-xl font-bold text-slate-900">{tDashboard('recentActivity.title')}</h2>
+                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('buttons.viewAll')}</button>
               </div>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
@@ -505,9 +508,9 @@ export default function OwnerDashboard() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">New staff member added</p>
-                    <p className="text-xs text-slate-500 mt-1">John Doe joined as cashier</p>
-                    <p className="text-xs text-slate-400 mt-1">2 hours ago</p>
+                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.newStaffAdded')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.staffJoined', { name: 'John Doe', position: 'cashier' })}</p>
+                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 2 })}</p>
                   </div>
                 </div>
 
@@ -518,9 +521,9 @@ export default function OwnerDashboard() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">Perfect attendance</p>
-                    <p className="text-xs text-slate-500 mt-1">All staff checked in today</p>
-                    <p className="text-xs text-slate-400 mt-1">4 hours ago</p>
+                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.perfectAttendance')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.allStaffCheckedIn')}</p>
+                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 4 })}</p>
                   </div>
                 </div>
 
@@ -531,9 +534,9 @@ export default function OwnerDashboard() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">Monthly report generated</p>
-                    <p className="text-xs text-slate-500 mt-1">Revenue up 15% this month</p>
-                    <p className="text-xs text-slate-400 mt-1">Yesterday</p>
+                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.monthlyReport')}</p>
+                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.revenueUp', { percentage: 15 })}</p>
+                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.yesterday')}</p>
                   </div>
                 </div>
               </div>
@@ -543,10 +546,10 @@ export default function OwnerDashboard() {
           {/* Performance Overview */}
           <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">Performance Overview</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{tDashboard('performance.title')}</h2>
               <select className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white">
-                <option>This Month</option>
-                <option>Last Month</option>
+                <option>{t('common.thisMonth')}</option>
+                <option>{t('common.lastMonth')}</option>
                 <option>Last 3 Months</option>
               </select>
             </div>
@@ -562,8 +565,8 @@ export default function OwnerDashboard() {
                     <span className="text-2xl font-bold text-slate-900">92%</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">Attendance Rate</h3>
-                <p className="text-sm text-slate-600">Monthly average</p>
+                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.attendanceRate')}</h3>
+                <p className="text-sm text-slate-600">{tDashboard('performance.monthlyAverage')}</p>
               </div>
 
               {/* Staff Satisfaction */}
@@ -577,8 +580,8 @@ export default function OwnerDashboard() {
                     <span className="text-2xl font-bold text-slate-900">4.8</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">Staff Rating</h3>
-                <p className="text-sm text-slate-600">Out of 5.0 stars</p>
+                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.staffRating')}</h3>
+                <p className="text-sm text-slate-600">{tDashboard('performance.outOfFive')}</p>
               </div>
 
               {/* Revenue Growth */}
@@ -592,8 +595,8 @@ export default function OwnerDashboard() {
                     <span className="text-xl font-bold text-slate-900">+15%</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">Revenue Growth</h3>
-                <p className="text-sm text-slate-600">vs last month</p>
+                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.revenueGrowth')}</h3>
+                <p className="text-sm text-slate-600">{tDashboard('performance.vsLastMonth')}</p>
               </div>
             </div>
           </div>

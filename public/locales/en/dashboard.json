@@ -1,0 +1,73 @@
+{
+  "title": "Owner Dashboard",
+  "welcome": "Welcome back, {{name}}! Here's what's happening with your business today",
+  "breadcrumb": {
+    "home": "Home",
+    "ownerDashboard": "Owner Dashboard"
+  },
+  "stats": {
+    "totalStaff": "Total Staff",
+    "activeStaff": "Active Staff",
+    "todaysAttendance": "Today's Attendance",
+    "monthlyRevenue": "Monthly Revenue",
+    "activeRate": "active rate",
+    "onTime": "On time",
+    "fromLastMonth": "from last month"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "staffManagement": "Staff Management",
+    "manageTeam": "Manage team",
+    "analytics": "Analytics",
+    "viewReports": "View reports",
+    "attendance": "Attendance",
+    "trackTime": "Track time",
+    "settings": "Settings",
+    "configure": "Configure"
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "newStaffAdded": "New staff member added",
+    "staffJoined": "{{name}} joined as {{position}}",
+    "perfectAttendance": "Perfect attendance",
+    "allStaffCheckedIn": "All staff checked in today",
+    "monthlyReport": "Monthly report generated",
+    "revenueUp": "Revenue up {{percentage}}% this month",
+    "timeAgo": {
+      "hoursAgo": "{{count}} hours ago",
+      "yesterday": "Yesterday"
+    }
+  },
+  "performance": {
+    "title": "Performance Overview",
+    "attendanceRate": "Attendance Rate",
+    "monthlyAverage": "Monthly average",
+    "staffRating": "Staff Rating",
+    "outOfFive": "Out of 5.0 stars",
+    "revenueGrowth": "Revenue Growth",
+    "vsLastMonth": "vs last month"
+  },
+  "systemStatus": {
+    "allSystemsActive": "All Systems Active",
+    "lastUpdated": "Last Updated"
+  },
+  "loadingMessage": "Loading dashboard...",
+  "quickActionItems": {
+    "staffManagement": {
+      "title": "Staff Management",
+      "subtitle": "Manage team"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "View reports"
+    },
+    "attendance": {
+      "title": "Attendance",
+      "subtitle": "Track time"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Configure"
+    }
+  }
+}

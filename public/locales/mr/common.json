@@ -1,0 +1,48 @@
+{
+  "appName": "शिफ्टईझी",
+  "buttons": {
+    "signOut": "साइन आउट",
+    "exportReport": "अहवाल निर्यात करा",
+    "viewAll": "सर्व पहा",
+    "save": "जतन करा",
+    "cancel": "रद्द करा",
+    "close": "बंद करा",
+    "edit": "संपादित करा",
+    "delete": "हटवा",
+    "add": "जोडा",
+    "submit": "सबमिट करा"
+  },
+  "navigation": {
+    "home": "मुख्यपृष्ठ",
+    "dashboard": "डॅशबोर्ड",
+    "staffManagement": "कर्मचारी व्यवस्थापन",
+    "schedule": "वेळापत्रक",
+    "analytics": "विश्लेषण",
+    "settings": "सेटिंग्ज"
+  },
+  "status": {
+    "loading": "लोड होत आहे...",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय",
+    "online": "ऑनलाइन",
+    "offline": "ऑफलाइन",
+    "success": "यशस्वी",
+    "error": "त्रुटी"
+  },
+  "common": {
+    "welcome": "स्वागत",
+    "today": "आज",
+    "yesterday": "काल",
+    "lastWeek": "गेला आठवडा",
+    "lastMonth": "गेला महिना",
+    "thisMonth": "हा महिना",
+    "total": "एकूण",
+    "name": "नाव",
+    "email": "ईमेल",
+    "phone": "फोन",
+    "address": "पत्ता",
+    "search": "शोधा",
+    "filter": "फिल्टर",
+    "sort": "क्रमवारी लावा"
+  }
+}

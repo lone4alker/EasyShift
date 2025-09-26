@@ -1,0 +1,73 @@
+{
+  "title": "मालक डॅशबोर्ड",
+  "welcome": "पुन्हा स्वागत आहे, {{name}}! आज आपल्या व्यवसायात काय घडत आहे ते येथे आहे",
+  "breadcrumb": {
+    "home": "मुख्यपृष्ठ",
+    "ownerDashboard": "मालक डॅशबोर्ड"
+  },
+  "stats": {
+    "totalStaff": "एकूण कर्मचारी",
+    "activeStaff": "सक्रिय कर्मचारी",
+    "todaysAttendance": "आजची उपस्थिती",
+    "monthlyRevenue": "मासिक महसूल",
+    "activeRate": "सक्रिय दर",
+    "onTime": "वेळेवर",
+    "fromLastMonth": "गेल्या महिन्यापासून"
+  },
+  "quickActions": {
+    "title": "द्रुत कृती",
+    "staffManagement": "कर्मचारी व्यवस्थापन",
+    "manageTeam": "टीम व्यवस्थापन",
+    "analytics": "विश्लेषण",
+    "viewReports": "अहवाल पहा",
+    "attendance": "उपस्थिती",
+    "trackTime": "वेळ ट्रॅक करा",
+    "settings": "सेटिंग्ज",
+    "configure": "कॉन्फिगर करा"
+  },
+  "recentActivity": {
+    "title": "अलीकडील क्रियाकलाप",
+    "newStaffAdded": "नवीन कर्मचारी जोडला गेला",
+    "staffJoined": "{{name}} {{position}} म्हणून सामील झाला",
+    "perfectAttendance": "परिपूर्ण उपस्थिती",
+    "allStaffCheckedIn": "सर्व कर्मचारी आज चेक इन झाले",
+    "monthlyReport": "मासिक अहवाल तयार केला",
+    "revenueUp": "या महिन्यात महसूल {{percentage}}% वाढला",
+    "timeAgo": {
+      "hoursAgo": "{{count}} तासांपूर्वी",
+      "yesterday": "काल"
+    }
+  },
+  "performance": {
+    "title": "कामगिरीचे विहंगावलोकन",
+    "attendanceRate": "उपस्थिती दर",
+    "monthlyAverage": "मासिक सरासरी",
+    "staffRating": "कर्मचारी रेटिंग",
+    "outOfFive": "5.0 स्टार पैकी",
+    "revenueGrowth": "महसूल वाढ",
+    "vsLastMonth": "गेल्या महिन्यापेक्षा"
+  },
+  "systemStatus": {
+    "allSystemsActive": "सर्व सिस्टम सक्रिय",
+    "lastUpdated": "शेवटचे अपडेट"
+  },
+  "loadingMessage": "डॅशबोर्ड लोड होत आहे...",
+  "quickActionItems": {
+    "staffManagement": {
+      "title": "कर्मचारी व्यवस्थापन",
+      "subtitle": "टीम व्यवस्थापित करा"
+    },
+    "analytics": {
+      "title": "विश्लेषण",
+      "subtitle": "अहवाल पहा"
+    },
+    "attendance": {
+      "title": "उपस्थिती",
+      "subtitle": "वेळ ट्रॅक करा"
+    },
+    "settings": {
+      "title": "सेटिंग्ज",
+      "subtitle": "कॉन्फिगर करा"
+    }
+  }
+}
