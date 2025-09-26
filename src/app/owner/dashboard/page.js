@@ -23,16 +23,6 @@ export default function OwnerDashboard() {
   const [businessId, setBusinessId] = useState(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user, loadDashboardData]);
-
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
     
@@ -206,6 +196,16 @@ export default function OwnerDashboard() {
       router.push('/owner/login');
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   // Export: fetch data -> backend AI -> generate PDF
   const handleExportReport = async () => {
