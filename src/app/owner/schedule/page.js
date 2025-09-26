@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
 import { useT } from '@/app/utils/translations';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
+import ScheduleAIInsights from './components/ScheduleAIInsights';
 
 export default function ScheduleDashboardPage() {
   const { t } = useT();
@@ -44,7 +45,7 @@ export default function ScheduleDashboardPage() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
@@ -92,7 +93,7 @@ export default function ScheduleDashboardPage() {
     console.log('No business data found for user');
   };
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/owner/login');
@@ -101,7 +102,7 @@ export default function ScheduleDashboardPage() {
       await fetchOwnerData(user);
     }
     setLoading(false);
-  };
+  }, [router]);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -248,104 +249,9 @@ export default function ScheduleDashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-slate-800">{t('schedule.ai.aiRecommendations')}</h3>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                3 {t('schedule.ai.insightsAvailable')}
-              </span>
             </div>
-            <div className="space-y-4">
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-blue-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-blue-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.staffingOptimization')}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 ml-2">
-                        {t('schedule.ai.highPriority')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Consider adding 2 extra staff members for Saturday peak hours (12-4 PM) to improve customer service and reduce wait times</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                      Apply Suggestion
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-yellow-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-yellow-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12s-1.536-.219-2.121-.341c-1.172-.879-1.172-2.303 0-3.182C10.464 8.781 11.232 9 12 9s1.536-.219 2.121-.341c1.172-.879 3.071-.879 4.242 0l.879.659M9 12h6" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.costOptimization')}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 ml-2">
-                        {t('schedule.ai.mediumPriority')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Reducing Mike's Friday shift by 1 hour could save $14 weekly while maintaining adequate coverage during slower periods</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                      {t('schedule.ai.applySuggestion')}
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-green-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-green-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">{t('schedule.ai.efficiencyReport')}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 ml-2">
-                        {t('schedule.ai.lowPriority')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Current schedule efficiency is 94% - well optimized for business hours and staff availability. No immediate changes needed.</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Dynamic AI Insights Component */}
+            <ScheduleAIInsights user={user} />
           </div>
         );
       default:

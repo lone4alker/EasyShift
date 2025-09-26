@@ -23,7 +23,7 @@ export default function I18nProvider({ children }) {
         }
       }, 1000);
     }
-  }, []);
+  }, [isInitialized]);
 
   if (!isInitialized) {
     return (

@@ -569,7 +569,7 @@ export default function OwnerSignup() {
             </div>
             <h1 className="text-4xl font-bold text-slate-800 mb-4">Setup Your Business</h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Let's get your business ready for AI-powered scheduling in 3 easy steps
+              Let&apos;s get your business ready for AI-powered scheduling in 3 easy steps
             </p>
           </div>
 

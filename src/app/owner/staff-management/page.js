@@ -202,7 +202,7 @@ export default function StaffManagementPage() {
     }
 
     fetchData();
-  }, []); // Empty dependency array ensures it runs once on mount
+  }, [router]); // Include router in dependencies
   // The state change for businessId no longer needs to trigger a second fetch
 
   const openModal = () => setIsModalOpen(true)

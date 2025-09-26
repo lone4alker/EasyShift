@@ -1,3 +1,4 @@
 . .\.venv\Scripts\Activate.ps1   #get into venv
 
 pip install google-genai python-dotenv
+python python/main.py
