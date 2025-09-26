@@ -207,6 +207,153 @@ export default function OwnerDashboard() {
     }
   };
 
+  // Export: fetch data -> backend AI -> generate PDF
+  const handleExportReport = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
+
+      // 1) Get businesses owned by the user using email
+      const { data: userBusinesses } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_email', currentUser.email);
+
+      if (!userBusinesses || userBusinesses.length === 0) {
+        alert('No businesses found for this owner email.');
+        return;
+      }
+
+      const businessIds = userBusinesses.map(b => b.business_id);
+
+      // 2) Fetch staff for these businesses
+      const { data: staffMembers } = await supabase
+        .from('staff_members')
+        .select('*')
+        .in('business_id', businessIds);
+
+      const staffIds = (staffMembers || []).map(s => s.staff_id);
+
+      // 3) Parallel fetch of related tables
+      const [availabilityRes, staffRolesRes, timeOffRes, schedulesRes, hoursRes] = await Promise.all([
+        supabase.from('staff_availability').select('*').in('staff_id', staffIds),
+        supabase.from('staff_roles').select('*').in('staff_id', staffIds),
+        supabase.from('time_off_requests').select('*').in('staff_id', staffIds),
+        supabase.from('schedules').select('*').in('business_id', businessIds),
+        supabase.from('business_hours').select('*').in('business_id', businessIds)
+      ]);
+
+      // 4) Shifts are tied to schedules; fetch but ignore errors if table missing
+      let shifts = [];
+      try {
+        const scheduleIds = (schedulesRes.data || []).map(s => s.schedule_id);
+        if (scheduleIds.length > 0) {
+          const { data: shiftData } = await supabase
+            .from('shifts')
+            .select('*')
+            .in('schedule_id', scheduleIds);
+          shifts = shiftData || [];
+        }
+      } catch (_) {}
+
+      const payload = {
+        metadata: {
+          owner_email: currentUser.email,
+          business_ids: businessIds,
+          generated_at: new Date().toISOString()
+        },
+        businesses: userBusinesses,
+        staff_members: staffMembers || [],
+        staff_availability: availabilityRes.data || [],
+        staff_roles: staffRolesRes.data || [],
+        time_off_requests: timeOffRes.data || [],
+        schedules: schedulesRes.data || [],
+        shifts: shifts,
+        business_hours: hoursRes.data || []
+      };
+
+      // 5) Call backend for recommendations (with fallback hosts and timeout)
+      const tryHosts = [
+        process.env.NEXT_PUBLIC_PY_API_URL,
+        'http://127.0.0.1:5000',
+        'http://localhost:5000'
+      ].filter(Boolean);
+
+      let rec = null;
+      let lastErr = null;
+      for (const host of tryHosts) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort('timeout'), 30000);
+          const resp = await fetch(`${host}/api/recommendations`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          if (resp.ok) {
+            rec = await resp.json();
+            break;
+          } else {
+            lastErr = new Error(`Backend responded ${resp.status} at ${host}`);
+          }
+        } catch (e) {
+          // If aborted due to timeout, try next host; otherwise capture error
+          if (e && e.name === 'AbortError') {
+            lastErr = new Error(`Request timed out at ${host}`);
+          } else {
+            lastErr = e;
+          }
+        }
+      }
+
+      if (!rec) throw lastErr || new Error('Failed to reach recommendation backend');
+
+      // 6) Generate PDF
+      const { default: jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      const businessName = userBusinesses[0]?.shop_name || 'Business';
+
+      doc.setFontSize(16);
+      doc.text(`EasyShift Report - ${businessName}`, 14, 18);
+      doc.setFontSize(11);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 26);
+
+      // Overview
+      const overview = [
+        `Total Staff: ${stats.totalStaff}`,
+        `Active Staff: ${stats.activeStaff}`,
+        `Today's Attendance: ${stats.todaysAttendance}`
+      ];
+      doc.text('Overview', 14, 36);
+      overview.forEach((l, i) => doc.text(`- ${l}`, 18, 44 + i * 6));
+
+      // AI Recommendations
+      doc.text('AI Recommendations', 14, 66);
+      const recText = (rec.ai_recommendations || '').substring(0, 2500); // avoid huge PDFs
+      doc.setFontSize(10);
+      const split = doc.splitTextToSize(recText, 180);
+      doc.text(split, 14, 74);
+
+      // Immediate Actions table
+      if (Array.isArray(rec.immediate_actions) && rec.immediate_actions.length > 0) {
+        autoTable(doc, {
+          startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 140,
+          head: [['Priority', 'Category', 'Action', 'Deadline']],
+          body: rec.immediate_actions.map(a => [a.priority, a.category, a.action, (a.deadline || '').toString().slice(0, 10)])
+        });
+      }
+
+      doc.save('EasyShift_Report.pdf');
+    } catch (e) {
+      console.error('Export failed:', e);
+      alert('Failed to export report. Check console for details.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
@@ -357,7 +504,7 @@ export default function OwnerDashboard() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 border-2 border-slate-300 text-slate-700 font-medium rounded-lg hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer">
+              <button onClick={handleExportReport} className="flex items-center space-x-2 px-4 py-2 border-2 border-slate-300 text-slate-700 font-medium rounded-lg hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -456,20 +603,42 @@ export default function OwnerDashboard() {
                     </div>
                   </Link>
 
-                  <Link
-                    href="/owner/schedule"
-                    className="group flex items-center p-3 sm:p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-green-200/50"
-                  >
+                  <button className="group flex items-center p-3 sm:p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-green-200/50">
                     <div className="p-2 bg-green-100 group-hover:bg-green-200 rounded-lg mr-3 transition-colors">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.schedule.title', 'Schedule')}</p>
-                      <p className="text-xs text-green-600">{tDashboard('quickActionItems.schedule.subtitle', 'Manage shifts')}</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.analytics.title', 'Analytics')}</p>
+                      <p className="text-xs text-green-600">{tDashboard('quickActionItems.analytics.subtitle', 'View reports')}</p>
                     </div>
-                  </Link>
+                  </button>
+
+                  <button className="group flex items-center p-3 sm:p-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-indigo-200/50">
+                    <div className="p-2 bg-indigo-100 group-hover:bg-indigo-200 rounded-lg mr-3 transition-colors">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.attendance.title', 'Attendance')}</p>
+                      <p className="text-xs text-indigo-600">{tDashboard('quickActionItems.attendance.subtitle', 'Track time')}</p>
+                    </div>
+                  </button>
+
+                  <button className="group flex items-center p-3 sm:p-4 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-purple-200/50">
+                    <div className="p-2 bg-purple-100 group-hover:bg-purple-200 rounded-lg mr-3 transition-colors">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.settings.title', 'Settings')}</p>
+                      <p className="text-xs text-purple-600">{tDashboard('quickActionItems.settings.subtitle', 'Configure')}</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>

@@ -11,7 +11,7 @@ import holidays
 
 load_dotenv()
 class StoreRecommendationAgent:
-    def __init__(self, supabase_url: str, supabase_key: str, gemini_api_key: str):
+    def _init_(self, supabase_url: str, supabase_key: str, gemini_api_key: str):
         """Initialize the AI recommendation agent with database and AI service connections."""
         self.supabase: Client = create_client(supabase_url, supabase_key)
         # Initialize Gemini client (uses provided key or env fallback if supported)
@@ -36,15 +36,15 @@ class StoreRecommendationAgent:
         try:
             # Fetch shifts with related data
             shifts_response = self.supabase.table('shifts').select(
-                '*, staff_id, shop_id, role_id'
-            ).eq('shop_id', self.shop_id).gte(
-                'start_date', start_date.isoformat()
-            ).lte('end_date', end_date.isoformat()).execute()
+                '*'
+            ).eq('business_id', self.shop_id).gte(
+                'start_time', start_date.isoformat()
+            ).lte('end_time', end_date.isoformat()).execute()
             
             # Fetch staff members
             staff_response = self.supabase.table('staff_members').select(
-                '*, shop_id'
-            ).eq('shop_id', self.shop_id).execute()
+                '*'
+            ).eq('business_id', self.shop_id).execute()
             
             # Fetch staff availability
             availability_response = self.supabase.table('staff_availability').select(
@@ -53,13 +53,13 @@ class StoreRecommendationAgent:
             
             # Fetch schedules
             schedules_response = self.supabase.table('schedules').select(
-                '*, shop_id, staff_id'
-            ).eq('shop_id', self.shop_id).execute()
+                '*'
+            ).eq('business_id', self.shop_id).execute()
             
             # Fetch business hours
             hours_response = self.supabase.table('business_hours').select(
                 '*'
-            ).eq('shop_id', self.shop_id).execute()
+            ).eq('business_id', self.shop_id).execute()
             
             # Fetch time off requests
             time_off_response = self.supabase.table('time_off_requests').select(
@@ -75,9 +75,7 @@ class StoreRecommendationAgent:
             ).execute()
             
             # Fetch shop details
-            shop_response = self.supabase.table('shops').select(
-                '*'
-            ).eq('shop_id', self.shop_id).execute()
+            shop_response = self.supabase.table('businesses').select('*').eq('business_id', self.shop_id).execute()
             
             return {
                 'shifts': shifts_response.data,
@@ -110,9 +108,10 @@ class StoreRecommendationAgent:
         schedules_df = pd.DataFrame(data['schedules']) if data['schedules'] else pd.DataFrame()
         
         # Convert datetime fields
-        if 'start_date' in shifts_df.columns:
-            shifts_df['start_date'] = pd.to_datetime(shifts_df['start_date'])
-            shifts_df['day_of_week'] = shifts_df['start_date'].dt.day_name()
+        # Normalize time fields
+        if 'start_time' in shifts_df.columns:
+            shifts_df['start_time'] = pd.to_datetime(shifts_df['start_time'])
+            shifts_df['day_of_week'] = shifts_df['start_time'].dt.day_name()
         
         analysis = {
             'total_shifts': len(shifts_df),
@@ -157,10 +156,10 @@ class StoreRecommendationAgent:
         """Analyze patterns around festivals and suggest staffing changes."""
         shifts_df = pd.DataFrame(data['shifts']) if data['shifts'] else pd.DataFrame()
         
-        if shifts_df.empty or 'start_date' not in shifts_df.columns:
+        if shifts_df.empty or 'start_time' not in shifts_df.columns:
             return {'festival_analysis': 'No shift data available for festival analysis'}
         
-        shifts_df['start_date'] = pd.to_datetime(shifts_df['start_date'])
+        shifts_df['start_time'] = pd.to_datetime(shifts_df['start_time'])
         
         festival_analysis = {
             'upcoming_festivals': [],
@@ -183,14 +182,14 @@ class StoreRecommendationAgent:
             if (today - timedelta(days=365)) <= date <= today:
                 # Check shifts around this festival (3 days before and after)
                 festival_period = shifts_df[
-                    (shifts_df['start_date'].dt.date >= (date - timedelta(days=3))) &
-                    (shifts_df['start_date'].dt.date <= (date + timedelta(days=3)))
+                    (shifts_df['start_time'].dt.date >= (date - timedelta(days=3))) &
+                    (shifts_df['start_time'].dt.date <= (date + timedelta(days=3)))
                 ]
                 
                 if not festival_period.empty:
                     normal_period = shifts_df[
-                        (shifts_df['start_date'].dt.date >= (date - timedelta(days=14))) &
-                        (shifts_df['start_date'].dt.date <= (date - timedelta(days=7)))
+                        (shifts_df['start_time'].dt.date >= (date - timedelta(days=14))) &
+                        (shifts_df['start_time'].dt.date <= (date - timedelta(days=7)))
                     ]
                     
                     festival_shifts = len(festival_period)
@@ -272,9 +271,9 @@ class StoreRecommendationAgent:
         
         # Shift efficiency analysis
         if not shifts_df.empty:
-            if 'start_date' in shifts_df.columns:
-                shifts_df['start_date'] = pd.to_datetime(shifts_df['start_date'])
-                daily_shifts = shifts_df.groupby(shifts_df['start_date'].dt.date).size()
+            if 'start_time' in shifts_df.columns:
+                shifts_df['start_time'] = pd.to_datetime(shifts_df['start_time'])
+                daily_shifts = shifts_df.groupby(shifts_df['start_time'].dt.date).size()
                 
                 profit_analysis['efficiency_improvements']['shift_distribution'] = {
                     'avg_shifts_per_day': round(daily_shifts.mean(), 2),
@@ -287,26 +286,51 @@ class StoreRecommendationAgent:
     
     def generate_ai_recommendations(self, analysis_data: Dict) -> str:
         """Generate comprehensive AI recommendations using Google Gemini."""
-        
+        # Use safe defaults in case upstream analyses are sparse
+        staffing = analysis_data.get('staffing') or {}
+        festivals = analysis_data.get('festivals') or {}
+        profit = analysis_data.get('profit') or {}
+
+        if not isinstance(staffing, dict):
+            staffing = {}
+        if not isinstance(festivals, dict):
+            festivals = {}
+        if not isinstance(profit, dict):
+            profit = {}
+
+        total_shifts = staffing.get('total_shifts', 0)
+        total_staff = staffing.get('total_staff', 0)
+        active_staff = staffing.get('active_staff', 0)
+        peak_days = staffing.get('peak_days', {})
+        role_distribution = staffing.get('role_distribution', {})
+        shifts_per_staff = staffing.get('shifts_per_staff', {})
+
+        upcoming_festivals = festivals.get('upcoming_festivals', [])
+        historical_festival_impact = festivals.get('historical_festival_impact', {})
+        staffing_recommendations = festivals.get('staffing_recommendations', [])
+
+        staff_cost_analysis = profit.get('staff_cost_analysis', {})
+        efficiency_improvements = profit.get('efficiency_improvements', {})
+
         context = f"""
         COMPREHENSIVE STORE ANALYSIS DATA:
         
         STAFFING EFFICIENCY:
-        - Total shifts analyzed: {analysis_data['staffing']['total_shifts']}
-        - Total staff members: {analysis_data['staffing']['total_staff']}
-        - Active staff: {analysis_data['staffing']['active_staff']}
-        - Peak days: {analysis_data['staffing']['peak_days']}
-        - Role distribution: {analysis_data['staffing']['role_distribution']}
-        - Shifts per staff: {analysis_data['staffing']['shifts_per_staff']}
+        - Total shifts analyzed: {total_shifts}
+        - Total staff members: {total_staff}
+        - Active staff: {active_staff}
+        - Peak days: {peak_days}
+        - Role distribution: {role_distribution}
+        - Shifts per staff: {shifts_per_staff}
         
         FESTIVAL & SEASONAL ANALYSIS:
-        - Upcoming festivals: {analysis_data['festivals']['upcoming_festivals']}
-        - Historical festival impact: {analysis_data['festivals']['historical_festival_impact']}
-        - Festival staffing recommendations: {analysis_data['festivals']['staffing_recommendations']}
+        - Upcoming festivals: {upcoming_festivals}
+        - Historical festival impact: {historical_festival_impact}
+        - Festival staffing recommendations: {staffing_recommendations}
         
         PROFIT OPTIMIZATION DATA:
-        - Staff cost analysis: {analysis_data['profit']['staff_cost_analysis']}
-        - Efficiency improvements: {analysis_data['profit']['efficiency_improvements']}
+        - Staff cost analysis: {staff_cost_analysis}
+        - Efficiency improvements: {efficiency_improvements}
         
         Analysis period: {analysis_data.get('period', 'Last 90 days')}
         Location: India (considering local festivals and holidays)
@@ -420,39 +444,43 @@ class StoreRecommendationAgent:
         """Generate immediate actionable items."""
         actions = []
         
-        # Festival-based actions
-        festivals = analysis['festivals']['staffing_recommendations']
-        for festival_rec in festivals:
-            if festival_rec['priority'] == 'High':
-                actions.append({
-                    'priority': 'Critical',
-                    'category': 'Festival Preparation',
-                    'action': f"Prepare for {festival_rec['festival']}",
-                    'description': festival_rec['recommendation'],
-                    'deadline': festival_rec['date']
-                })
-        
-        # Staffing efficiency actions
-        staffing = analysis['staffing']
-        if staffing.get('total_staff', 0) > 0:
-            utilization = staffing.get('shifts_per_staff', {})
-            if utilization:
-                max_shifts = max(utilization.values())
-                min_shifts = min(utilization.values())
-                
-                if max_shifts > min_shifts * 2:  # Significant imbalance
+        # Festival-based actions (with safe defaults)
+        festivals_data = analysis.get('festivals', {})
+        festivals = festivals_data.get('staffing_recommendations', [])
+        if isinstance(festivals, list):
+            for festival_rec in festivals:
+                if isinstance(festival_rec, dict) and festival_rec.get('priority') == 'High':
                     actions.append({
-                        'priority': 'High',
-                        'category': 'Staff Optimization',
-                        'action': 'Balance staff workload',
-                        'description': f'Some staff have {max_shifts} shifts while others have {min_shifts}. Redistribute for better efficiency.',
-                        'deadline': (datetime.now() + timedelta(days=7)).isoformat()
+                        'priority': 'Critical',
+                        'category': 'Festival Preparation',
+                        'action': f"Prepare for {festival_rec.get('festival', 'upcoming festival')}",
+                        'description': festival_rec.get('recommendation', 'Prepare for festival period'),
+                        'deadline': festival_rec.get('date', (datetime.now() + timedelta(days=7)).isoformat())
                     })
         
+        # Staffing efficiency actions
+        staffing = analysis.get('staffing', {})
+        if staffing.get('total_staff', 0) > 0:
+            utilization = staffing.get('shifts_per_staff', {})
+            if utilization and isinstance(utilization, dict):
+                values = [v for v in utilization.values() if isinstance(v, (int, float))]
+                if values:
+                    max_shifts = max(values)
+                    min_shifts = min(values)
+                    
+                    if max_shifts > min_shifts * 2:  # Significant imbalance
+                        actions.append({
+                            'priority': 'High',
+                            'category': 'Staff Optimization',
+                            'action': 'Balance staff workload',
+                            'description': f'Some staff have {max_shifts} shifts while others have {min_shifts}. Redistribute for better efficiency.',
+                            'deadline': (datetime.now() + timedelta(days=7)).isoformat()
+                        })
+        
         # Cost optimization actions
-        profit = analysis['profit']
+        profit = analysis.get('profit', {})
         staff_costs = profit.get('staff_cost_analysis', {})
-        if staff_costs.get('total_monthly_labor_cost', 0) > 0:
+        if isinstance(staff_costs, dict) and staff_costs.get('total_monthly_labor_cost', 0) > 0:
             actions.append({
                 'priority': 'Medium',
                 'category': 'Cost Control',
@@ -526,63 +554,88 @@ def get_shop_recommendations(shop_id: str, supabase_url: str, supabase_key: str,
     return agent.generate_comprehensive_recommendations(shop_id)
 
 def create_flask_api():
-    """Flask API integration example."""
+    """Flask API that accepts frontend data and returns recommendations."""
     from flask import Flask, request, jsonify
-    
-    app = Flask(__name__)
-    
-    @app.route('/api/shop/<shop_id>/recommendations', methods=['GET'])
-    def get_recommendations(shop_id):
+    from flask_cors import CORS
+
+    app = Flask(_name_)
+    CORS(app)
+
+    @app.route('/api/recommendations', methods=['POST'])
+    def recommendations_from_frontend():
         try:
-            supabase_url = os.getenv('SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_KEY') 
-            gemini_api_key = os.getenv('GEMINI_API_KEY')
-            
-            recommendations = get_shop_recommendations(
-                shop_id, supabase_url, supabase_key, gemini_api_key
-            )
-            
-            return jsonify(recommendations)
-            
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    
-    @app.route('/api/shop/<shop_id>/quick-actions', methods=['GET'])
-    def get_quick_actions(shop_id):
-        try:
-            supabase_url = os.getenv('SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_KEY')
-            gemini_api_key = os.getenv('GEMINI_API_KEY')
-            
-            agent = StoreRecommendationAgent(supabase_url, supabase_key, gemini_api_key)
-            raw_data = agent.fetch_comprehensive_data()
-            
-            # Quick analysis for immediate actions
-            staffing_analysis = agent.analyze_staffing_efficiency(raw_data)
-            festival_analysis = agent.analyze_festival_patterns(raw_data)
-            
-            combined_analysis = {
-                'staffing': staffing_analysis,
-                'festivals': festival_analysis,
-                'profit': {}
+            payload = request.get_json(force=True) or {}
+
+            # Extract business context from metadata
+            metadata = payload.get('metadata', {}) or {}
+            business_ids = metadata.get('business_ids', []) or []
+            owner_email = metadata.get('owner_email', 'Unknown')
+
+            # Build minimal analysis inputs from posted data
+            raw_data = {
+                'shifts': payload.get('shifts', []) or [],
+                'staff_members': payload.get('staff_members', []) or [],
+                'staff_availability': payload.get('staff_availability', []) or [],
+                'schedules': payload.get('schedules', []) or [],
+                'business_hours': payload.get('business_hours', []) or [],
+                'time_off_requests': payload.get('time_off_requests', []) or [],
+                'roles': payload.get('roles', []) or [],
+                'staff_roles': payload.get('staff_roles', []) or [],
+                'businesses': payload.get('businesses', []) or [],
+                'analysis_period': metadata.get('generated_at', ''),
+                'business_ids': business_ids,
+                'owner_email': owner_email
             }
-            
-            quick_actions = agent._generate_immediate_actions(combined_analysis)
-            
-            return jsonify({'quick_actions': quick_actions})
-            
+
+            # Use the same analysis pipeline without DB fetch
+            agent = StoreRecommendationAgent(
+                os.getenv('SUPABASE_URL', ''),
+                os.getenv('SUPABASE_KEY', ''),
+                os.getenv('GEMINI_API_KEY', '')
+            )
+
+            staffing = agent.analyze_staffing_efficiency(raw_data)
+            festivals = agent.analyze_festival_patterns(raw_data)
+            profit = agent.analyze_profit_optimization(raw_data)
+
+            combined = {
+                'staffing': staffing,
+                'festivals': festivals,
+                'profit': profit,
+                'period': raw_data.get('analysis_period') or 'Recent data'
+            }
+
+            ai_text = agent.generate_ai_recommendations(combined)
+            actions = agent._generate_immediate_actions(combined)
+
+            return jsonify({
+                'ai_recommendations': ai_text,
+                'immediate_actions': actions,
+                'analysis_summary': combined,
+                'business_context': {
+                    'business_ids': business_ids,
+                    'owner_email': owner_email,
+                    'business_count': len(payload.get('businesses', []))
+                },
+                'generated_at': datetime.now().isoformat()
+            })
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    
+            import traceback
+            tb = traceback.format_exc()
+            print("/api/recommendations error:", e)
+            print(tb)
+            # Return 200 with error payload so frontend can still render PDF with error info
+            return jsonify({
+                'ai_recommendations': f"Recommendation generation failed: {e}",
+                'immediate_actions': [],
+                'analysis_summary': {},
+                'error': str(e),
+                'trace': tb,
+                'generated_at': datetime.now().isoformat()
+            })
+
     return app
 
-if __name__ == "__main__":
-    # Example usage
-    SUPABASE_URL = os.getenv('SUPABASE_URL', 'your-supabase-url')
-    SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your-supabase-key')
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'your-openai-key')
-    
-    # Test the agent
-    # agent = StoreRecommendationAgent(SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY)
-    # recommendations = agent.generate_comprehensive_recommendations('your-shop-id')
-    # print(json.dumps(recommendations, indent=2, default=str))
+if _name_ == "_main_":
+    app = create_flask_api()
+    app.run(host='127.0.0.1', port=5000, debug=True)
