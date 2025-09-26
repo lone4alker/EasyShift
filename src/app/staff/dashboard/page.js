@@ -6,10 +6,57 @@ import { useRouter } from 'next/navigation';
 import Breadcrumbs from '../../../../components/ui/Breadcrumbs';
 import { supabase } from '@/app/utils/supabase';
 
+// --- Reusable Request Form Component ---
+const RequestForm = ({ submitHandler, submitState }) => {
+  return (
+    <fieldset className="border border-slate-200 rounded-xl p-4 mb-4">
+      <legend className="px-2 text-sm font-semibold text-slate-700">Time Off Request</legend>
+      <form onSubmit={submitHandler} className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Start Date (IST)</label>
+            <input name="start-date" type="date" required className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Start Time (HH:MM)</label>
+            <input name="start-time" type="time" required className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">End Date (IST)</label>
+            <input name="end-date" type="date" required className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">End Time (HH:MM)</label>
+            <input name="end-time" type="time" required className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Reason (optional)</label>
+          <input name="reason" type="text" placeholder="Short note" className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+        </div>
+        <button
+          type="submit"
+          disabled={submitState.loading}
+          className={`w-full sm:w-auto px-4 py-2 rounded-lg text-white font-semibold ${submitState.loading ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        >
+          {submitState.loading ? 'Sending...' : 'Send Request'}
+        </button>
+        {submitState.message && (
+          <div className={`text-xs mt-1 ${submitState.kind === 'success' ? 'text-emerald-700' : submitState.kind === 'error' ? 'text-red-600' : 'text-slate-600'}`}>{submitState.message}</div>
+        )}
+      </form>
+    </fieldset>
+  );
+};
+
+// --- Main StaffDashboard Component ---
 export default function StaffDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [staffId, setStaffId] = useState(null);
 
   // Attendance / timer state
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -21,16 +68,12 @@ export default function StaffDashboard() {
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [shifts, setShifts] = useState([
     { id: 1, date: new Date(), start: '09:00', end: '17:00', role: 'Cashier', location: 'Main' },
-    { id: 2, date: new Date(Date.now() + 24*60*60*1000), start: '12:00', end: '20:00', role: 'Barista', location: 'West' },
-    { id: 3, date: new Date(Date.now() + 2*24*60*60*1000), start: '10:00', end: '18:00', role: 'Stock', location: 'Main', changed: true },
+    { id: 2, date: new Date(Date.now() + 24 * 60 * 60 * 1000), start: '12:00', end: '20:00', role: 'Barista', location: 'West' },
+    { id: 3, date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), start: '10:00', end: '18:00', role: 'Stock', location: 'Main', changed: true },
   ]);
 
-  // Availability & requests
-  const [timeOffRequests, setTimeOffRequests] = useState([
-    { id: 'r1', range: { from: '2025-10-10', to: '2025-10-12' }, status: 'approved' },
-    { id: 'r2', range: { from: '2025-11-02', to: '2025-11-02' }, status: 'pending' }
-  ]);
-  const [unavailableDays, setUnavailableDays] = useState(['2025-10-07']);
+  // Requests list (fetched after submit)
+  const [timeOffRequests, setTimeOffRequests] = useState([]);
 
   // Pay
   const [paySummary, setPaySummary] = useState({
@@ -43,7 +86,75 @@ export default function StaffDashboard() {
     { id: 'n1', type: 'schedule', text: 'Your shift on Fri changed to 10:00 - 18:00', time: '2h ago' },
     { id: 'n2', type: 'request', text: 'Time-off request Nov 2 approved', time: '1d ago' }
   ]);
+  const [submitState, setSubmitState] = useState({ loading: false, message: null, kind: 'info' });
 
+  // --- Functions ---
+  const fetchMyRequests = async (uid) => {
+    const { data, error } = await supabase
+      .from('time_off_requests')
+      .select('request_id, start_datetime, end_datetime, status, reason, created_at')
+      .eq('staff_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(25);
+    if (!error && data) setTimeOffRequests(data);
+  };
+
+  const resolveStaffId = async (sessionUser) => {
+    try {
+      if (!sessionUser?.id) return null;
+      const { data, error } = await supabase
+        .from('staff_members')
+        .select('staff_id')
+        .eq('user_id', sessionUser.id)
+        .single();
+      return data?.staff_id || null;
+    } catch (e) {
+      console.error('Error resolving staff ID:', e);
+      return null;
+    }
+  };
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    if (!user || !staffId) {
+      setSubmitState({ loading: false, message: 'Your staff profile could not be found. Please contact an administrator.', kind: 'error' });
+      return;
+    }
+
+    setSubmitState({ loading: true, message: null, kind: 'info' });
+
+    const form = new FormData(e.currentTarget);
+    const startDate = form.get('start-date');
+    const startTime = form.get('start-time');
+    const endDate = form.get('end-date');
+    const endTime = form.get('end-time');
+    const reason = form.get('reason') || null;
+
+    if (!startDate || !startTime || !endDate || !endTime) {
+      setSubmitState({ loading: false, message: 'Please fill out all fields.', kind: 'error' });
+      return;
+    }
+
+    const requestData = {
+      staff_id: staffId,
+      start_datetime: istToUtcIso(startDate, startTime),
+      end_datetime: istToUtcIso(endDate, endTime),
+      reason,
+      status: 'pending',
+    };
+
+    const { error } = await supabase.from('time_off_requests').insert(requestData);
+
+    if (!error) {
+      await fetchMyRequests(staffId);
+      e.currentTarget.reset();
+      setSubmitState({ loading: false, message: 'Time off request sent.', kind: 'success' });
+    } else {
+      setSubmitState({ loading: false, message: error.message || 'Failed to send request', kind: 'error' });
+    }
+  };
+
+  // --- Effects & Memos ---
   useEffect(() => {
     let isMounted = true;
     const init = async () => {
@@ -54,13 +165,20 @@ export default function StaffDashboard() {
       }
       if (isMounted) {
         setUser(session.user);
+        const sid = await resolveStaffId(session.user);
+        setStaffId(sid);
+        if (sid) {
+          await fetchMyRequests(sid);
+        }
         setLoading(false);
       }
     };
     init();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!session) router.push('/staff/login');
     });
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
@@ -81,10 +199,10 @@ export default function StaffDashboard() {
     const ss = String(diff % 60).padStart(2, '0');
     return `${hh}:${mm}:${ss}`;
   }, [now, isClockedIn, clockInTime]);
-
+  
+  // --- UI Handlers ---
   const handleClockIn = () => {
-    const ts = Date.now();
-    setClockInTime(ts);
+    setClockInTime(Date.now());
     setIsClockedIn(true);
   };
 
@@ -106,21 +224,12 @@ export default function StaffDashboard() {
     router.push('/staff/login');
   };
 
-  const toggleUnavailable = (isoDate) => {
-    setUnavailableDays((prev) =>
-      prev.includes(isoDate) ? prev.filter((d) => d !== isoDate) : [...prev, isoDate]
-    );
-  };
-
-  const submitTimeOff = (e) => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const from = form.get('from');
-    const to = form.get('to');
-    if (!from || !to) return;
-    const newReq = { id: `r-${Date.now()}`, range: { from, to }, status: 'pending' };
-    setTimeOffRequests([newReq, ...timeOffRequests]);
-    e.currentTarget.reset();
+  // Convert IST local (YYYY-MM-DD, HH:MM) to UTC ISO
+  const istToUtcIso = (dateStr, timeStr) => {
+    const [y, m, d] = dateStr.split('-').map((x) => parseInt(x, 10));
+    const [hh, mm] = timeStr.split(':').map((x) => parseInt(x, 10));
+    const utcMs = Date.UTC(y, m - 1, d, hh, mm) - 330 * 60 * 1000;
+    return new Date(utcMs).toISOString();
   };
 
   if (loading) {
@@ -131,9 +240,9 @@ export default function StaffDashboard() {
     );
   }
 
+  // --- Rendered Component ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Top bar */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/60">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -147,17 +256,14 @@ export default function StaffDashboard() {
               <div className="text-base font-semibold text-slate-800">Dashboard</div>
             </div>
           </div>
-
           <div className="hidden md:block max-w-lg flex-1 mx-6">
             <Breadcrumbs />
           </div>
-
           <div className="flex items-center space-x-2">
             <button onClick={handleLogout} className="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition">Log Out</button>
           </div>
         </div>
       </header>
-
       <main className="container mx-auto px-6 py-6 space-y-6">
         {/* Hero row: Time Clock + Quick Stats */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -183,14 +289,10 @@ export default function StaffDashboard() {
                 )}
               </div>
             </div>
-
-            {/* Attendance log */}
             <div className="mt-5">
               <div className="text-sm font-medium text-slate-700 mb-2">Past Shifts</div>
               <div className="space-y-2 max-h-56 overflow-auto pr-1">
-                {attendanceLog.length === 0 && (
-                  <div className="text-sm text-slate-500">No shifts recorded yet.</div>
-                )}
+                {attendanceLog.length === 0 && <div className="text-sm text-slate-500">No shifts recorded yet.</div>}
                 {attendanceLog.map((a) => (
                   <div key={a.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
                     <div className="text-sm text-slate-700">
@@ -203,8 +305,6 @@ export default function StaffDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Pay summary */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-5">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">My Pay</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -221,10 +321,8 @@ export default function StaffDashboard() {
             </div>
           </div>
         </section>
-
         {/* Schedule + Availability/Requests */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Schedule */}
           <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-800">Shift Schedule</h3>
@@ -233,7 +331,6 @@ export default function StaffDashboard() {
                 <button onClick={() => setViewMode('month')} className={`px-3 py-1.5 text-sm ${viewMode === 'month' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>Month</button>
               </div>
             </div>
-
             {viewMode === 'week' ? (
               <div className="space-y-3">
                 {shifts.map((s) => (
@@ -245,53 +342,40 @@ export default function StaffDashboard() {
                         <div className="font-semibold text-slate-800">{s.start} - {s.end} • {s.role} {s.location ? `@ ${s.location}` : ''}</div>
                       </div>
                     </div>
-                    {s.changed && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-amber-200 text-amber-900 font-semibold">Updated</span>
-                    )}
+                    {s.changed && <span className="text-xs px-2 py-1 rounded-full bg-amber-200 text-amber-900 font-semibold">Updated</span>}
                   </div>
                 ))}
               </div>
-            ) : (
-              <MiniMonthCalendar shifts={shifts} />
-            )}
+            ) : (<MiniMonthCalendar shifts={shifts} />)}
           </div>
-
-          {/* Availability & Requests */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-5">
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">Availability & Requests</h3>
-            <form onSubmit={submitTimeOff} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">From</label>
-                  <input name="from" type="date" className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">To</label>
-                  <input name="to" type="date" className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                </div>
-              </div>
-              <button type="submit" className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold">Request Time Off</button>
-            </form>
-
-            <div className="mt-5">
-              <div className="text-sm font-medium text-slate-700 mb-2">Recurring Unavailability</div>
-              <SimpleSelectableCalendar selectedDays={unavailableDays} onToggle={toggleUnavailable} />
-            </div>
-
+            <h3 className="text-lg font-semibold text-slate-800 mb-3">Time Off Requests</h3>
+            <RequestForm submitHandler={submitRequest} submitState={submitState} />
             <div className="mt-5">
               <div className="text-sm font-medium text-slate-700 mb-2">My Requests</div>
               <div className="space-y-2 max-h-40 overflow-auto pr-1">
+                {timeOffRequests.length === 0 && <div className="text-sm text-slate-500">No requests submitted yet.</div>}
                 {timeOffRequests.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
-                    <div className="text-sm text-slate-700">{r.range.from} → {r.range.to}</div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : r.status === 'denied' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{r.status}</span>
+                  <div key={r.request_id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
+                    <div className="text-sm text-slate-700">
+                      <div className="font-semibold">
+                        {new Date(r.start_datetime).toLocaleDateString()}
+                        {r.start_datetime && new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        →
+                        {new Date(r.end_datetime).toLocaleDateString()}
+                        {r.end_datetime && new Date(r.end_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="text-xs text-slate-500">{r.reason || '—'}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : r.status === 'denied' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{r.status}</span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </section>
-
         {/* Notifications */}
         <section className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-3">
@@ -322,19 +406,25 @@ function MiniMonthCalendar({ shifts }) {
   const today = new Date();
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
   const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const days = [];
-  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-    days.push(new Date(d));
-  }
-  const shiftDates = new Set(shifts.map((s) => new Date(s.date.getFullYear(), s.date.getMonth(), s.date.getDate()).toDateString()));
+  const days = useMemo(() => {
+    const d = [];
+    for (let current = new Date(first); current <= last; current.setDate(current.getDate() + 1)) {
+      d.push(new Date(current));
+    }
+    return d;
+  }, [first, last]);
+
+  const shiftDates = useMemo(() => new Set(shifts.map((s) => new Date(s.date.getFullYear(), s.date.getMonth(), s.date.getDate()).toDateString())), [shifts]);
+  const todayKey = useMemo(() => new Date().toDateString(), []);
+
   return (
     <div className="grid grid-cols-7 gap-2">
-      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w) => (
+      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w) => (
         <div key={w} className="text-xs text-slate-500 text-center">{w}</div>
       ))}
       {days.map((d) => {
         const key = d.toDateString();
-        const isToday = key === new Date().toDateString();
+        const isToday = key === todayKey;
         const hasShift = shiftDates.has(key);
         return (
           <div key={key} className={`aspect-square rounded-xl border flex items-center justify-center ${isToday ? 'border-slate-900' : 'border-slate-200'} ${hasShift ? 'bg-blue-50' : 'bg-white'}`}>
@@ -345,39 +435,3 @@ function MiniMonthCalendar({ shifts }) {
     </div>
   );
 }
-
-function SimpleSelectableCalendar({ selectedDays, onToggle }) {
-  const base = new Date();
-  const first = new Date(base.getFullYear(), base.getMonth(), 1);
-  const last = new Date(base.getFullYear(), base.getMonth() + 1, 0);
-  const days = [];
-  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-    days.push(new Date(d));
-  }
-  const setSelected = new Set(selectedDays);
-  const iso = (dt) => dt.toISOString().slice(0,10);
-
-  return (
-    <div className="grid grid-cols-7 gap-2">
-      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((w) => (
-        <div key={w} className="text-xs text-slate-500 text-center">{w}</div>
-      ))}
-      {days.map((d) => {
-        const k = iso(d);
-        const selected = setSelected.has(k);
-        return (
-          <button
-            key={k}
-            type="button"
-            onClick={() => onToggle(k)}
-            className={`aspect-square rounded-xl border text-sm font-medium transition ${selected ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'}`}
-          >
-            {d.getDate()}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-

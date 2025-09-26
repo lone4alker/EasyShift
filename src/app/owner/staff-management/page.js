@@ -9,12 +9,16 @@ import { supabase } from '@/app/utils/supabase';
 
 /**
  * Saves a new staff member and their availability to the Supabase database.
+ * NOTE: This function is no longer called directly from the UI.
+ * The logic has been moved and integrated into the handleAddStaff function to first
+ * create a user account via Supabase Auth.
  * @param {Object} staffPayload - Data from the front-end form.
  * @param {string} businessId - The ID of the owner's business.
+ * @param {string} userId - The unique ID of the newly created Supabase Auth user.
  */
-async function saveStaffToDatabase(staffPayload, businessId) {
-  if (!businessId) {
-    throw new Error("Business ID is required to save staff.");
+async function saveStaffToDatabase(staffPayload, businessId, userId) {
+  if (!businessId || !userId) {
+    throw new Error("Business ID and User ID are required to save staff.");
   }
 
   // 1. Insert the new staff member into the 'staff_members' table with the role name.
@@ -32,13 +36,14 @@ async function saveStaffToDatabase(staffPayload, businessId) {
     business_id: businessId, // Use the fetched businessId from businesses table
     is_active: true,
     role: staffPayload.roleName.trim(), // Save the role name directly in the 'role' column
+    user_id: userId, // Link to the new Supabase Auth user
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
 
   // Validate required fields
-  if (!staffMemberData.first_name || !staffMemberData.email || !staffMemberData.role) {
-    throw new Error('First name, email, and role are required fields.');
+  if (!staffMemberData.first_name || !staffMemberData.email || !staffMemberData.role || !staffMemberData.user_id) {
+    throw new Error('First name, email, role, and user ID are required fields.');
   }
 
   const { data: newStaff, error: staffError } = await supabase
@@ -97,6 +102,7 @@ export default function StaffManagementPage() {
     hourlyRate: 0,
     maxHours: 8,
     availability: [],
+    password: '', // ADDED: New password field
   })
 
   // COMBINED useEffect to fetch business_id and then staff data
@@ -209,6 +215,7 @@ export default function StaffManagementPage() {
       hourlyRate: 0,
       maxHours: 8,
       availability: [],
+      password: '', // ADDED: Clear password field on close
     });
   }
 
@@ -265,6 +272,10 @@ export default function StaffManagementPage() {
   const handleAddStaff = async () => {
     const validationErrors = validateStaffForm();
     
+    if (!newStaffMember.password || newStaffMember.password.length < 6) {
+      validationErrors.push('Password must be at least 6 characters long.');
+    }
+
     if (validationErrors.length > 0) {
       alert('Please fix the following errors:\n' + validationErrors.join('\n'));
       return;
@@ -277,20 +288,41 @@ export default function StaffManagementPage() {
 
     setIsSaving(true);
 
-    const staffPayload = {
-      name: newStaffMember.fullName,
-      roleName: newStaffMember.role,
-      email: newStaffMember.email,
-      phoneNumber: newStaffMember.phone,
-      hourlyRate: parseFloat(newStaffMember.hourlyRate),
-      maxHours: parseInt(newStaffMember.maxHours),
-      availability: newStaffMember.availability,
-    }
-
     try {
-      const addedStaff = await saveStaffToDatabase(staffPayload, businessId);
+      // Step 1: Create the user in Supabase Auth
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+        email: newStaffMember.email,
+        password: newStaffMember.password,
+      });
+
+      if (signUpError) {
+        console.error('Supabase Sign-Up Error:', signUpError);
+        alert(`Failed to create user account: ${signUpError.message}`);
+        setIsSaving(false);
+        return;
+      }
+
+      if (!user) {
+        throw new Error('User was not created by Supabase Auth.');
+      }
+
+      // Step 2: Save the staff member to your database table,
+      // linking it to the new user's ID.
+      const staffPayload = {
+        name: newStaffMember.fullName,
+        roleName: newStaffMember.role,
+        email: newStaffMember.email,
+        phoneNumber: newStaffMember.phone,
+        hourlyRate: parseFloat(newStaffMember.hourlyRate),
+        maxHours: parseInt(newStaffMember.maxHours),
+        availability: newStaffMember.availability,
+      }
+
+      const addedStaff = await saveStaffToDatabase(staffPayload, businessId, user.id);
+      
       setStaff(prev => [...prev, addedStaff])
       closeModal()
+
     } catch (error) {
       console.error('Error adding staff member:', error)
       alert(`Failed to add staff member: ${error.message}`)
@@ -309,7 +341,8 @@ export default function StaffManagementPage() {
       phone: member.phone === 'Not provided' ? '' : member.phone,
       hourlyRate: member.hourlyRate,
       maxHours: member.maxHours,
-      availability: member.availability || []
+      availability: member.availability || [],
+      password: '', // EDIT: Password should not be pre-filled
     });
     setIsModalOpen(true);
   };
@@ -384,7 +417,14 @@ export default function StaffManagementPage() {
     }
     
     try {
+      // Find the staff member to get their user_id
+      const memberToDelete = staff.find(member => member.id === id);
+      if (!memberToDelete) {
+        throw new Error('Staff member not found in state.');
+      }
+
       // Delete staff member from staff_members table
+      // ON DELETE CASCADE on the user_id foreign key will handle the auth.users deletion.
       const { error } = await supabase
         .from('staff_members')
         .delete()
@@ -586,13 +626,13 @@ export default function StaffManagementPage() {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-slate-900">{member.name}</div>
                           <div className="text-sm text-slate-500">{member.email}</div>
+                          <div className="text-xs text-slate-400">ID: {member.id}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <div className="text-sm text-slate-900">{member.role}</div>
                       <div className="text-sm text-slate-500">{member.maxHours} hours/week</div>
-                      <div className="text-xs text-slate-400">ID: {member.id}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 hidden sm:table-cell">
                       <div className="flex items-center">
@@ -700,21 +740,6 @@ export default function StaffManagementPage() {
                 />
               </div>
 
-              {/* Role */}
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-slate-700">Role</label>
-                <input
-                  type="text"
-                  name="role"
-                  id="role"
-                  value={newStaffMember.role}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
-                  placeholder="e.g., Barista"
-                  required
-                />
-              </div>
-
               {/* Hourly Rate */}
               <div>
                 <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700">Hourly Rate ($)</label>
@@ -726,6 +751,7 @@ export default function StaffManagementPage() {
                   onChange={handleNewStaffChange}
                   className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
                   min="0"
+                  step="0.01"
                 />
               </div>
 
@@ -743,78 +769,90 @@ export default function StaffManagementPage() {
                   max="168"
                 />
               </div>
+
+              {/* Password Field */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  id="password"
+                  value={newStaffMember.password}
+                  onChange={handleNewStaffChange}
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  placeholder="••••••••"
+                  required={!isEditMode} // Password is only required for new staff
+                />
+              </div>
+
+              {/* Role */}
+              <div className="md:col-span-2">
+                <label htmlFor="role" className="block text-sm font-medium text-slate-700">Role</label>
+                <input
+                  type="text"
+                  name="role"
+                  id="role"
+                  value={newStaffMember.role}
+                  onChange={handleNewStaffChange}
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  placeholder="e.g., Stylist, Server, Manager"
+                  required
+                />
+              </div>
+
+              {/* Availability Section */}
+              <div className="md:col-span-2">
+                <h4 className="text-sm font-medium text-slate-700">Availability (Optional)</h4>
+                <p className="text-xs text-slate-500 mb-3">Select the days this staff member is available to work.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                    <div key={day} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={day}
+                        name="availability"
+                        value={day}
+                        checked={newStaffMember.availability.some(d => d.day === day)}
+                        onChange={handleNewStaffDayChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                      />
+                      <label htmlFor={day} className="ml-2 block text-sm text-slate-700">{day.substring(0, 3)}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </form>
 
-            {/* Availability Section */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Availability</label>
-              <div className="flex flex-wrap gap-2">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`day-${day}`}
-                      name="availabilityDay"
-                      value={day}
-                      checked={newStaffMember.availability.some(d => d.day === day)}
-                      onChange={handleNewStaffDayChange}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`day-${day}`} className="ml-2 text-sm text-slate-700">
-                      {day}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end space-x-4">
+            <div className="mt-8 flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 transition-all duration-200"
+                className="px-6 py-3 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={isEditMode ? handleUpdateStaff : handleAddStaff}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                 disabled={isSaving}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:transform-none"
               >
                 {isSaving ? (
                   <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {isEditMode ? 'Updating...' : 'Adding...'}
+                    Saving...
                   </div>
                 ) : (
-                  isEditMode ? 'Update Staff Member' : 'Add Staff Member'
+                  isEditMode ? 'Save Changes' : 'Add Staff Member'
                 )}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Tailwind CSS Animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
-        }
-        .animate-slide-up {
-          animation: slideUp 0.3s ease-out;
-        }
-      `}</style>
     </div>
   )
 }
