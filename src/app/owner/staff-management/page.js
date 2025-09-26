@@ -8,43 +8,14 @@ import { supabase } from '@/app/utils/supabase'
 export default function StaffManagementPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [staffLoading, setStaffLoading] = useState(false);
   const [ownerData, setOwnerData] = useState(null);
   const router = useRouter();
-  const [staff, setStaff] = useState([
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      role: 'Barista',
-      email: 'sarah@email.com',
-      phone: '(555) 123-4567',
-      hourlyRate: 15.5,
-      maxHours: 8,
-      availability: [
-        { day: 'Monday', start: '08:00', end: '16:00' },
-        { day: 'Tuesday', start: '08:00', end: '16:00' },
-        { day: 'Thursday', start: '10:00', end: '18:00' },
-        { day: 'Friday', start: '09:00', end: '15:00' },
-        { day: 'Saturday', start: '09:00', end: '15:00' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      role: 'Cashier',
-      email: 'mike@email.com',
-      phone: '(555) 234-5678',
-      hourlyRate: 14,
-      maxHours: 6,
-      availability: [
-        { day: 'Tuesday', start: '12:00', end: '20:00' },
-        { day: 'Wednesday', start: '12:00', end: '20:00' },
-        { day: 'Friday', start: '16:00', end: '22:00' },
-        { day: 'Saturday', start: '10:00', end: '18:00' },
-        { day: 'Sunday', start: '10:00', end: '18:00' },
-      ],
-    },
-  ])
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [staff, setStaff] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [newStaffMember, setNewStaffMember] = useState({
     fullName: '',
     role: '',
@@ -59,8 +30,14 @@ export default function StaffManagementPage() {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (ownerData && ownerData.id) {
+      fetchStaff();
+    }
+  }, [ownerData]);
+
   const fetchOwnerData = async (user) => {
-    console.log('Fetching owner data for user ID:', user.id);
+    console.log('Fetching owner data for user:', { id: user.id, email: user.email });
     
     // Try to fetch all business records first to debug
     try {
@@ -71,20 +48,22 @@ export default function StaffManagementPage() {
       
       console.log('All businesses (first 5):', allBusinesses);
       console.log('List error:', listError);
+      
+      if (allBusinesses && allBusinesses.length > 0) {
+        console.log('Sample business structure:', allBusinesses[0]);
+      }
     } catch (err) {
       console.log('Error fetching businesses list:', err);
     }
 
-    // Try multiple approaches to find the owner data
+    // Try multiple approaches to find the owner data using the actual database structure
     const attempts = [
-      // Attempt 1: owner_id field
-      () => supabase.from('businesses').select('*').eq('owner_id', user.id).single(),
-      // Attempt 2: id field
-      () => supabase.from('businesses').select('*').eq('id', user.id).single(),
-      // Attempt 3: user_id field (common alternative)
-      () => supabase.from('businesses').select('*').eq('user_id', user.id).single(),
-      // Attempt 4: Get first business record for this user's email
-      () => supabase.from('businesses').select('*').eq('owner_email', user.email).single()
+      // Attempt 1: owner_email field
+      () => supabase.from('businesses').select('*').eq('owner_email', user.email).single(),
+      // Attempt 2: Check if there's a user relation field
+      () => supabase.from('businesses').select('*').eq('owner_phone_number', user.phone).single(),
+      // Attempt 3: Get first business for debugging
+      () => supabase.from('businesses').select('*').limit(1).single()
     ];
 
     for (let i = 0; i < attempts.length; i++) {
@@ -94,8 +73,13 @@ export default function StaffManagementPage() {
         
         if (!error && businessData) {
           console.log('Successfully found business data:', businessData);
-          setOwnerData(businessData);
-          return;
+          // Ensure we have the business_id field
+          if (businessData.business_id) {
+            setOwnerData(businessData);
+            return;
+          } else {
+            console.log('Business data found but no business_id field:', businessData);
+          }
         }
       } catch (err) {
         console.log(`Attempt ${i + 1} exception:`, err);
@@ -103,6 +87,35 @@ export default function StaffManagementPage() {
     }
     
     console.log('No business data found for user');
+    
+    // If no business found, let's create a default one or show a setup message
+    try {
+      console.log('Attempting to create/find business record...');
+      const { data: newBusiness, error: createError } = await supabase
+        .from('businesses')
+        .upsert([{
+          owner_email: user.email,
+          owner_full_name: user.user_metadata?.full_name || user.email,
+          shop_name: `${user.user_metadata?.full_name || 'My'} Business`,
+          business_type: 'General',
+        }], { 
+          onConflict: 'owner_email',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+        
+      if (!createError && newBusiness) {
+        console.log('Created/found business:', newBusiness);
+        setOwnerData(newBusiness);
+      } else {
+        console.error('Error creating business:', createError);
+        setError('Unable to load business information. Please contact support.');
+      }
+    } catch (err) {
+      console.error('Error in business creation:', err);
+      setError('Unable to setup business. Please contact support.');
+    }
   };
 
   const checkAuth = async () => {
@@ -116,6 +129,97 @@ export default function StaffManagementPage() {
     setLoading(false);
   };
 
+  // Fetch staff members from Supabase
+  const fetchStaff = async () => {
+    if (!ownerData?.business_id) {
+      console.log('No business_id available:', ownerData);
+      return;
+    }
+    
+    setStaffLoading(true);
+    setError(null);
+    
+    try {
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff_members')
+        .select('*')
+        .eq('business_id', ownerData.business_id)
+        .order('created_at', { ascending: false });
+
+      if (staffError) {
+        throw staffError;
+      }
+
+      // Transform the data to match the expected format
+      const formattedStaff = staffData?.map(staff => ({
+        id: staff.staff_id,
+        name: `${staff.first_name} ${staff.last_name}`,
+        role: staff.role,
+        email: staff.email,
+        phone: staff.phone_number || '',
+        hourlyRate: staff.hourly_rate || 0,
+        maxHours: staff.max_hours_per_week || 40,
+        availability: [], // Will need to fetch from staff_availability table
+      })) || [];
+
+      setStaff(formattedStaff);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      setError('Failed to load staff members. Please try again.');
+    } finally {
+      setStaffLoading(false);
+    }
+  };
+
+  // Add new staff member to Supabase
+  const addStaffToDatabase = async (staffData) => {
+    if (!ownerData?.business_id) {
+      console.error('Business data:', ownerData);
+      throw new Error('Business information not available. Please refresh the page.');
+    }
+
+    // Split full name into first and last name
+    const nameParts = staffData.fullName.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const { data, error } = await supabase
+      .from('staff_members')
+      .insert([{
+        business_id: ownerData.business_id,
+        first_name: firstName,
+        last_name: lastName,
+        email: staffData.email,
+        phone_number: staffData.phone || null,
+        role: staffData.role,
+        hourly_rate: parseFloat(staffData.hourlyRate) || 0,
+        max_hours_per_week: parseInt(staffData.maxHours) * 7 || 40, // Convert daily to weekly
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select();
+
+    if (error) {
+      throw error;
+    }
+
+    return data[0];
+  };
+
+  // Delete staff member from Supabase
+  const deleteStaffFromDatabase = async (staffId) => {
+    const { error } = await supabase
+      .from('staff_members')
+      .delete()
+      .eq('staff_id', staffId)
+      .eq('business_id', ownerData?.business_id); // Security check
+
+    if (error) {
+      throw error;
+    }
+  };
+
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -123,9 +227,16 @@ export default function StaffManagementPage() {
     }
   };
 
-  const openModal = () => setIsModalOpen(true)
+  const openModal = () => {
+    setIsModalOpen(true);
+    setError(null);
+    setSuccess(null);
+  }
+  
   const closeModal = () => {
-    setIsModalOpen(false)
+    setIsModalOpen(false);
+    setError(null);
+    setSuccess(null);
     setNewStaffMember({
       fullName: '',
       role: '',
@@ -134,7 +245,7 @@ export default function StaffManagementPage() {
       hourlyRate: 0,
       maxHours: 8,
       availability: [],
-    })
+    });
   }
 
   const handleNewStaffChange = e => {
@@ -152,28 +263,65 @@ export default function StaffManagementPage() {
     })
   }
 
-  const handleAddStaff = () => {
+  const handleAddStaff = async () => {
     if (!newStaffMember.fullName || !newStaffMember.role || !newStaffMember.email) {
-      alert('Full Name, Role, and Email are required.')
-      return
+      setError('Full Name, Role, and Email are required.');
+      return;
     }
-    const newId = staff.length > 0 ? Math.max(...staff.map(s => s.id)) + 1 : 1
-    const newStaff = {
-      id: newId,
-      name: newStaffMember.fullName,
-      role: newStaffMember.role,
-      email: newStaffMember.email,
-      phone: newStaffMember.phone,
-      hourlyRate: parseFloat(newStaffMember.hourlyRate),
-      maxHours: parseInt(newStaffMember.maxHours),
-      availability: newStaffMember.availability,
+
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const newStaffData = await addStaffToDatabase(newStaffMember);
+      
+      // Add to local state to immediately show the new staff member
+      const formattedStaff = {
+        id: newStaffData.staff_id,
+        name: `${newStaffData.first_name} ${newStaffData.last_name}`,
+        role: newStaffData.role,
+        email: newStaffData.email,
+        phone: newStaffData.phone_number || '',
+        hourlyRate: newStaffData.hourly_rate || 0,
+        maxHours: Math.floor((newStaffData.max_hours_per_week || 40) / 7),
+        availability: [], // Will be populated when availability system is implemented
+      };
+      
+      setStaff(prev => [formattedStaff, ...prev]);
+      setSuccess('Staff member added successfully!');
+      
+      // Auto-close modal after 2 seconds
+      setTimeout(() => {
+        closeModal();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error adding staff:', error);
+      setError(error.message || 'Failed to add staff member. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setStaff(prev => [...prev, newStaff])
-    closeModal()
   }
 
-  const handleDeleteStaff = id => {
-    setStaff(prev => prev.filter(member => member.id !== id))
+  const handleDeleteStaff = async (id) => {
+    if (!confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteStaffFromDatabase(id);
+      setStaff(prev => prev.filter(member => member.id !== id));
+      setSuccess('Staff member deleted successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      console.error('Error deleting staff:', error);
+      setError(error.message || 'Failed to delete staff member. Please try again.');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setError(null), 5000);
+    }
   }
 
   const getInitials = name => {
@@ -190,6 +338,26 @@ export default function StaffManagementPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading staff management...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ownerData || !ownerData.business_id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <h2 className="text-xl font-semibold text-slate-800 mb-2">Business Setup Required</h2>
+          <p className="text-slate-600 mb-4">We need to set up your business information before you can manage staff.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry Setup
+          </button>
         </div>
       </div>
     );
@@ -303,6 +471,29 @@ export default function StaffManagementPage() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 pb-8">
+        {/* Error and Success Messages */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-700">{success}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
@@ -347,7 +538,27 @@ export default function StaffManagementPage() {
 
         {/* Staff Cards Grid */}
         <div className="grid gap-6">
-          {staff.map(member => (
+          {staffLoading ? (
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Loading staff members...</p>
+            </div>
+          ) : staff.length === 0 ? (
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8 text-center">
+              <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-slate-700 mb-2">No Staff Members Yet</h3>
+              <p className="text-slate-500 mb-4">Get started by adding your first team member</p>
+              <button
+                onClick={openModal}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                Add Your First Staff Member
+              </button>
+            </div>
+          ) : (
+            staff.map(member => (
             <div key={member.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
                 {/* Profile Section */}
@@ -442,7 +653,8 @@ export default function StaffManagementPage() {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
 
@@ -475,6 +687,29 @@ export default function StaffManagementPage() {
             </div>
             
             <div className="p-6">
+              {/* Modal Error and Success Messages */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {success && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-700">{success}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Personal Information */}
               <div className="mb-8">
                 <div className="flex items-center mb-3">
@@ -630,9 +865,17 @@ export default function StaffManagementPage() {
                 </button>
                 <button 
                   onClick={handleAddStaff} 
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  Add Staff Member
+                  {isSubmitting ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Adding Staff...</span>
+                    </div>
+                  ) : (
+                    'Add Staff Member'
+                  )}
                 </button>
               </div>
             </div>
