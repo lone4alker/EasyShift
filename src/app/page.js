@@ -6,32 +6,42 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-inter">
       {/* Header */}
-      <header className="border-b border-blue-200/30 bg-white/95 backdrop-blur-lg shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-5">
+      <header className="border-b border-white/20 bg-white/90 backdrop-blur-xl shadow-lg sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4 group">
               <div className="relative">
-                <svg className="h-9 w-9 text-blue-600 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-80"></div>
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:rotate-3">
+                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white animate-pulse"></div>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 bg-clip-text text-transparent tracking-tight">ShiftEasy</span>
+              <div>
+                <span className="text-2xl font-black bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent tracking-tight">ShiftEasy</span>
+                <div className="text-xs text-blue-600 font-medium -mt-1">AI Scheduling</div>
+              </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Link href="/dashboard">
-                <button className="px-5 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 cursor-pointer font-medium tracking-wide shadow-sm hover:shadow-md">
-                  Owner Portal
+            <div className="flex items-center space-x-4">
+              <Link href="/owner/login">
+                <button className="group px-6 py-3 bg-gradient-to-r from-slate-50 to-blue-50 border-2 border-blue-200/50 rounded-2xl text-slate-700 hover:text-blue-700 hover:border-blue-300 transition-all duration-300 cursor-pointer font-semibold tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>Owner Portal</span>
+                  </span>
                 </button>
               </Link>
-              <Link href="/setup">
-                <button className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-300 cursor-pointer font-semibold tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                  Get Started
-                </button>
-              </Link>
-              <Link href="/staff-portal">
-                <button className="px-4 py-2.5 text-slate-600 hover:text-blue-600 transition-all duration-300 cursor-pointer font-medium tracking-wide hover:bg-blue-50 rounded-lg">
-                  Staff Login
+              <Link href="/staff/login">
+                <button className="group px-5 py-3 text-slate-600 hover:text-blue-600 transition-all duration-300 cursor-pointer font-semibold tracking-wide hover:bg-blue-50/80 rounded-2xl">
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Staff Login</span>
+                  </span>
                 </button>
               </Link>
             </div>
@@ -39,18 +49,84 @@ export default function LandingPage() {
         </div>
       </header>
 
+      {/* Navigation Breadcrumb Bar */}
+      <div className="bg-gradient-to-r from-blue-50/80 via-indigo-50/80 to-purple-50/80 backdrop-blur-sm border-b border-slate-200/50 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5"></div>
+        <div className="container mx-auto px-6 py-3 relative">
+          <div className="flex items-center justify-between">
+            {/* Current Location */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-slate-700">You're browsing: </span>
+                <span className="text-sm font-semibold text-blue-700 bg-blue-100/50 px-3 py-1 rounded-full">
+                  Home / Landing Page
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-xs text-slate-600">
+                <span>Quick Access:</span>
+                <Link 
+                  href="/owner/login" 
+                  className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 group"
+                >
+                  <svg className="w-3 h-3 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>Owner</span>
+                </Link>
+                <span className="text-slate-400">•</span>
+                <Link 
+                  href="/staff/login" 
+                  className="inline-flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 font-medium transition-colors duration-200 group"
+                >
+                  <svg className="w-3 h-3 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Staff</span>
+                </Link>
+                <span className="text-slate-400">•</span>
+                <button className="inline-flex items-center space-x-1 text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200 group">
+                  <svg className="w-3 h-3 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Help</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-24 pb-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-indigo-600/5 to-purple-600/5"></div>
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-indigo-400/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse delay-1000"></div>
+      <section className="relative overflow-hidden pt-20 pb-30">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/5 via-transparent to-indigo-600/5"></div>
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgb(59 130 246 / 0.1)" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
+        <div className="absolute top-40 right-10 w-96 h-96 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse delay-1000"></div>
+        <div className="absolute bottom-20 left-1/2 w-64 h-64 bg-gradient-to-r from-emerald-400/15 to-blue-400/15 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-pulse delay-500"></div>
         
         <div className="container mx-auto px-6 relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div className="space-y-7">
                 <div className="space-y-5">
-                  <div className="inline-flex items-center px-3 py-1.5 bg-blue-100/80 rounded-full text-blue-700 text-xs font-semibold tracking-wide backdrop-blur-sm">
-                    🚀 AI-Powered Scheduling Revolution
+                  <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100/90 to-indigo-100/90 border border-blue-200/50 rounded-full text-blue-700 text-sm font-bold tracking-wide backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-300 group cursor-default">
+                    <span className="mr-2 group-hover:rotate-12 transition-transform duration-300">🚀</span>
+                    <span>AI-Powered Scheduling Revolution</span>
+                    <div className="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                   <h1 className="text-3xl lg:text-5xl font-bold leading-tight tracking-tight">
                     <span className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 bg-clip-text text-transparent">AI-Powered Staff</span>
@@ -147,12 +223,18 @@ export default function LandingPage() {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="group bg-gradient-to-br from-white to-blue-50/30 rounded-3xl shadow-xl border border-blue-100/50 p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 transform hover:-translate-y-2">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+            <div className="group bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-3xl shadow-2xl border border-blue-100/60 p-8 hover:shadow-3xl hover:shadow-blue-500/20 transition-all duration-700 transform hover:-translate-y-3 hover:rotate-1 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative">
+                <div className="mb-6">
+                  <div className="relative">
+                    <div className="w-18 h-18 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-3xl flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                      <svg className="h-8 w-8 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full border-2 border-white group-hover:scale-125 transition-transform duration-300"></div>
+                  </div>
                 </div>
               </div>
               <h3 className="text-xl font-bold mb-3 text-slate-800 group-hover:text-blue-600 transition-colors duration-300">AI-Optimized Schedules</h3>
@@ -213,12 +295,20 @@ export default function LandingPage() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center group">
-              <div className="relative mb-8">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/25 group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-3xl font-black text-white">1</span>
+            <div className="text-center group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-3xl transform scale-0 group-hover:scale-100 transition-transform duration-500 -z-10"></div>
+              <div className="relative mb-10 p-6">
+                <div className="relative">
+                  <div className="w-28 h-28 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent"></div>
+                    <span className="text-4xl font-black text-white relative z-10">1</span>
+                  </div>
+                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-4 border-white group-hover:scale-125 transition-transform duration-300 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white"></div>
               </div>
               <h3 className="text-xl font-bold mb-3 text-slate-800 group-hover:text-blue-600 transition-colors duration-300">Setup Your Shop</h3>
               <p className="text-slate-600 leading-relaxed text-sm">
@@ -271,12 +361,39 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-indigo-600/90"></div>
+      <section className="py-40 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/95 to-indigo-600/95"></div>
+          <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <radialGradient id="dots" cx="50%" cy="50%" r="2">
+                <stop offset="0%" stopColor="white" stopOpacity="1"/>
+                <stop offset="100%" stopColor="white" stopOpacity="0"/>
+              </radialGradient>
+            </defs>
+            <pattern id="dotPattern" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+              <circle cx="5" cy="5" r="1" fill="url(#dots)"/>
+            </pattern>
+            <rect width="100%" height="100%" fill="url(#dotPattern)"/>
+          </svg>
+        </div>
         <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-20 left-20 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-white/10 to-yellow-300/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-white/5 to-pink-300/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-white/5 to-cyan-300/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+          {/* Floating Icons */}
+          <div className="absolute top-32 left-1/4 animate-bounce delay-700">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <div className="absolute bottom-32 right-1/4 animate-bounce delay-300">
+            <div className="w-12 h-12 bg-yellow-400/30 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <span className="text-xl">⚡</span>
+            </div>
+          </div>
         </div>
         
         <div className="container mx-auto px-6 text-center relative">
