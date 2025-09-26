@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/app/utils/supabase'
+import { supabase } from '@/app/utils/supabase' // Assumed correct import path
 
 export default function OwnerSignup() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -17,7 +17,7 @@ export default function OwnerSignup() {
     shopName: '',
     businessType: '',
     address: '',
-    phone: '',
+    phone: '', // Business Phone (Not currently used in SQL schema, but kept in form state)
     
     // Step 2: Operating Schedule
     openingTime: '09:00',
@@ -34,10 +34,10 @@ export default function OwnerSignup() {
     
     // Step 3: Account Creation
     email: '',
-    username: '',
+    username: '', // Used for owner_full_name
     password: '',
     confirmPassword: '',
-    accountPhone: ''
+    accountPhone: '' // Used for owner_phone_number
   })
 
   const businessTypes = [
@@ -45,7 +45,7 @@ export default function OwnerSignup() {
     'Medical Practice', 'Dental Office', 'Hotel', 'Other'
   ]
 
-
+  // --- Helper Functions (No change) ---
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -60,8 +60,6 @@ export default function OwnerSignup() {
       }
     }))
   }
-
-
 
   const nextStep = () => {
     if (validateCurrentStep()) {
@@ -86,6 +84,7 @@ export default function OwnerSignup() {
           setError('Please select a business type')
           return false
         }
+        // Address is NOT required as per Step 1 form field ('Address (Optional)')
         return true
       case 2:
         const hasOperatingDay = Object.values(formData.operatingDays).some(day => day)
@@ -115,10 +114,32 @@ export default function OwnerSignup() {
           setError('Password must be at least 6 characters long')
           return false
         }
+        if (!formData.accountPhone.trim()) {
+            setError('Phone Number is required')
+            return false
+        }
         return true
       default:
         return true
     }
+  }
+
+  // --- Main Data Handling Function (MODIFIED) ---
+
+  /**
+   * Helper function to convert the day name (string) to the SQL integer representation (0=Sunday, 1=Monday, ..., 6=Saturday).
+   */
+  const dayToInt = (day) => {
+    const days = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6
+    }
+    return days[day.toLowerCase()]
   }
 
   const handleComplete = async () => {
@@ -127,18 +148,113 @@ export default function OwnerSignup() {
     setLoading(true)
     setError(null)
 
+    const { 
+        email, 
+        password, 
+        shopName, 
+        businessType, 
+        address, 
+        username, 
+        accountPhone, 
+        operatingDays, 
+        openingTime, 
+        closingTime 
+    } = formData
+
     try {
-      // Here you would save the business setup data
-      // For now, just redirect to login
-      console.log('Business setup completed:', formData)
+      // 1. SIGN UP THE USER (Owner) with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      })
+
+      if (authError) throw authError
+
+      // The user ID should be available after successful sign up
+      const userId = authData.user?.id
+
+      if (!userId) {
+          throw new Error("User sign up failed to return a user ID.")
+      }
+
+
+      // 2. INSERT BUSINESS DETAILS into the 'businesses' table
+      const businessData = {
+        business_id: userId, // Use the user's UUID as the primary key for the business/owner record
+        owner_email: email,
+        owner_phone_number: accountPhone,
+        owner_full_name: username,
+        business_contact_name: username, // Using username for contact name as well
+        shop_name: shopName,
+        business_type: businessType,
+        address: address || 'Not Provided', // Address is optional in the form, but NOT NULL in SQL, so provide default
+      }
+
+      const { error: businessError } = await supabase
+        .from('businesses')
+        .insert([businessData])
+
+      if (businessError) throw businessError
+
+
+      // 3. INSERT OPERATING HOURS into the 'business_hours' table
+      const businessHoursInserts = Object.entries(operatingDays)
+        .map(([day, isSelected]) => {
+            const operatingDayInt = dayToInt(day)
+            
+            if (isSelected) {
+                // Open day
+                return {
+                    business_id: userId,
+                    operating_day: operatingDayInt,
+                    open_time: openingTime,
+                    close_time: closingTime,
+                    is_closed: false
+                }
+            } else {
+                // Closed day
+                return {
+                    business_id: userId,
+                    operating_day: operatingDayInt,
+                    open_time: null, // or a specific "closed" time if required
+                    close_time: null, // or a specific "closed" time if required
+                    is_closed: true
+                }
+            }
+        })
+
+      const { error: hoursError } = await supabase
+        .from('business_hours')
+        .insert(businessHoursInserts)
+
+      if (hoursError) throw hoursError
+
+      
+      // All successful, redirect
+      console.log('Business setup and user account created successfully for ID:', userId)
       router.push('/owner/login?setup=complete')
+
     } catch (err) {
-      setError('An error occurred while setting up your business')
+      // Handle the error (e.g., email already exists, database insert failure)
       console.error('Setup error:', err)
+      
+      // Attempt to extract a user-friendly message
+      const errorMessage = err.message || err.error_description || 'An unexpected error occurred during setup.'
+      
+      // Check for common error types
+      if (errorMessage.includes('duplicate key value') && errorMessage.includes('owner_email')) {
+        setError('This email address is already registered. Please try signing in.')
+      } else if (errorMessage.includes('duplicate key value') && errorMessage.includes('owner_phone_number')) {
+        setError('This phone number is already registered.')
+      } else {
+        setError(`Setup failed: ${errorMessage}`)
+      }
     } finally {
       setLoading(false)
     }
   }
+
+  // --- Rendering Functions (No change) ---
 
   const renderProgressBar = () => (
     <div className="flex items-center justify-center mb-8">
