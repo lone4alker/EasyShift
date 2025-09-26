@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/app/utils/supabase';
+import { useT } from '@/app/utils/translations';
+import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 
 // --- Supabase API Functions ---
 
@@ -85,6 +87,7 @@ async function saveStaffToDatabase(staffPayload, businessId, userId) {
 // -------------------------------------------------------------------------
 
 export default function StaffManagementPage() {
+  const { t } = useT();
   const router = useRouter();
   const [staff, setStaff] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -412,7 +415,7 @@ export default function StaffManagementPage() {
   };
 
   const handleDeleteStaff = async (id) => {
-    if (!confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+    if (!confirm(t('staffManagement.deleteConfirm'))) {
       return;
     }
     
@@ -475,7 +478,7 @@ export default function StaffManagementPage() {
                   </svg>
                 </div>
                 <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  ShiftEasy
+                  {t('appName')}
                 </h1>
               </Link>
 
@@ -485,34 +488,36 @@ export default function StaffManagementPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                   </svg>
-                  <span className="text-sm">Dashboard</span>
+                  <span className="text-sm">{t('navigation.dashboard')}</span>
                 </Link>
 
                 <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <span className="text-sm">Staff Management</span>
+                  <span className="text-sm">{t('navigation.staffManagement')}</span>
                 </div>
 
                 <Link href="/owner/schedule" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
                   </svg>
-                  <span className="text-sm">Schedule</span>
+                  <span className="text-sm">{t('navigation.schedule')}</span>
                 </Link>
 
                 <Link href="/owner/analytics" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  <span className="text-sm">Analytics</span>
+                  <span className="text-sm">{t('navigation.analytics')}</span>
                 </Link>
               </div>
             </div>
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
             </div>
           </div>
         </div>
@@ -525,7 +530,7 @@ export default function StaffManagementPage() {
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs">Home</span>
+            <span className="text-xs">{t('navigation.home')}</span>
           </Link>
           <span className="text-slate-400">/</span>
           <Link href="/owner/dashboard" className="text-slate-500 hover:text-blue-600 transition-colors duration-200">
@@ -548,8 +553,8 @@ export default function StaffManagementPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-1">Staff Management</h2>
-                <p className="text-slate-600 text-xs">Manage your team members and their availability schedules</p>
+                <h2 className="text-xl font-bold text-slate-800 mb-1">{t('staffManagement.title')}</h2>
+                <p className="text-slate-600 text-xs">{t('staffManagement.subtitle')}</p>
               </div>
             </div>
 
@@ -561,7 +566,7 @@ export default function StaffManagementPage() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM7 10a2 2 0 11-4 0 2 2 0 014 0zM17 11a2 2 0 11-4 0 2 2 0 014 0zM19 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="text-sm">Add New Staff</span>
+              <span className="text-sm">{t('staffManagement.addNewStaff')}</span>
             </button>
           </div>
         </div>
@@ -573,22 +578,22 @@ export default function StaffManagementPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span className="ml-3 text-slate-600">Loading staff data...</span>
+            <span className="ml-3 text-slate-600">{t('staffManagement.loading')}</span>
           </div>
         ) : staff.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 text-center">
             <svg className="w-16 h-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 13a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1h16a1 1 0 011 1v6zm-10 1h2m-2 4h2m-4-4h2m-2 4h2m-2-4h2m-2 4h2m-2-4h2m-2 4h2M9 5h6M7 7h10" />
             </svg>
-            <h3 className="text-xl font-semibold text-slate-700">No Staff Members Yet</h3>
+            <h3 className="text-xl font-semibold text-slate-700">{t('staffManagement.noStaffMessage')}</h3>
             <p className="text-slate-500 mt-2 max-w-sm">
-              It looks like you haven't added any staff to your database. Click the button below to get started.
+              {t('staffManagement.noStaffDescription')}
             </p>
             <button
               onClick={openModal}
               className="mt-6 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
-              Add Your First Staff Member
+              {t('staffManagement.addFirstStaff')}
             </button>
           </div>
         ) : (
@@ -597,16 +602,16 @@ export default function StaffManagementPage() {
               <thead className="bg-slate-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Staff Member
+                    {t('staffManagement.table.staffMember')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">
-                    Role
+                    {t('staffManagement.table.role')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">
-                    Contact
+                    {t('staffManagement.table.contact')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Hourly Rate
+                    {t('staffManagement.table.hourlyRate')}
                   </th>
                   <th scope="col" className="relative px-6 py-3 text-center">
                     <span className="sr-only">Actions</span>
@@ -687,18 +692,18 @@ export default function StaffManagementPage() {
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <h3 className="text-2xl font-bold text-slate-800 mb-4">
-              {isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}
+              {isEditMode ? t('staffManagement.modal.editTitle') : t('staffManagement.modal.addTitle')}
             </h3>
             <p className="text-sm text-slate-500 mb-6">
               {isEditMode 
-                ? 'Update the details below to modify this team member.' 
-                : 'Fill out the details below to add a new team member to your database.'}
+                ? t('staffManagement.modal.editDescription') 
+                : t('staffManagement.modal.addDescription')}
             </p>
 
             <form onSubmit={e => e.preventDefault()} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700">Full Name</label>
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.fullName')}</label>
                 <input
                   type="text"
                   name="fullName"
@@ -713,7 +718,7 @@ export default function StaffManagementPage() {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.email')}</label>
                 <input
                   type="email"
                   name="email"
@@ -728,7 +733,7 @@ export default function StaffManagementPage() {
 
               {/* Phone Number */}
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-slate-700">Phone Number</label>
+                <label htmlFor="phone" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.phoneNumber')}</label>
                 <input
                   type="tel"
                   name="phone"
@@ -742,7 +747,7 @@ export default function StaffManagementPage() {
 
               {/* Hourly Rate */}
               <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700">Hourly Rate ($)</label>
+                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.hourlyRate')}</label>
                 <input
                   type="number"
                   name="hourlyRate"
@@ -757,7 +762,7 @@ export default function StaffManagementPage() {
 
               {/* Max Hours Per Week */}
               <div>
-                <label htmlFor="maxHours" className="block text-sm font-medium text-slate-700">Max Hours/Week</label>
+                <label htmlFor="maxHours" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.maxHoursWeek')}</label>
                 <input
                   type="number"
                   name="maxHours"
@@ -787,7 +792,7 @@ export default function StaffManagementPage() {
 
               {/* Role */}
               <div className="md:col-span-2">
-                <label htmlFor="role" className="block text-sm font-medium text-slate-700">Role</label>
+                <label htmlFor="role" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.role')}</label>
                 <input
                   type="text"
                   name="role"
@@ -829,7 +834,7 @@ export default function StaffManagementPage() {
                 onClick={closeModal}
                 className="px-6 py-3 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                Cancel
+                {t('staffManagement.modal.cancel')}
               </button>
               <button
                 type="button"
@@ -843,10 +848,10 @@ export default function StaffManagementPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving...
+                    {isEditMode ? t('staffManagement.modal.updating') : t('staffManagement.modal.adding')}
                   </div>
                 ) : (
-                  isEditMode ? 'Save Changes' : 'Add Staff Member'
+                  isEditMode ? t('staffManagement.modal.updateStaff') : t('staffManagement.modal.addStaff')
                 )}
               </button>
             </div>

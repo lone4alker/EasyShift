@@ -44,5 +44,243 @@
     "search": "Search",
     "filter": "Filter",
     "sort": "Sort"
+  },
+  "schedule": {
+    "title": "Schedule Dashboard",
+    "subtitle": "Manage and optimize your staff schedules",
+    "views": {
+      "calendarView": "Calendar View",
+      "listView": "List View",
+      "payroll": "Payroll",
+      "aiInsights": "AI Insights"
+    },
+    "calendar": {
+      "scheduleCalendar": "Schedule Calendar",
+      "noShifts": "No shifts",
+      "allStaff": "All Staff",
+      "allRoles": "All Roles"
+    },
+    "shifts": {
+      "totalShifts": "Total Shifts",
+      "pendingApproval": "Pending Approval",
+      "totalHours": "Total Hours",
+      "estimatedPayroll": "Est. Payroll",
+      "thisWeek": "This Week",
+      "requiresAction": "Requires action",
+      "scheduled": "Scheduled",
+      "weeklyEstimate": "Weekly estimate",
+      "shiftsThisWeek": "Shifts This Week",
+      "pendingApprovalAction": "pending approval",
+      "publishAllShifts": "Publish All Shifts",
+      "approved": "Approved"
+    },
+    "payroll": {
+      "payrollSummary": "Payroll Summary",
+      "totalPayroll": "Total Payroll",
+      "overtimeHours": "Overtime Hours",
+      "staffBreakdown": "Staff Breakdown",
+      "totalHoursLabel": "total hours"
+    },
+    "ai": {
+      "aiRecommendations": "AI Recommendations",
+      "insightsAvailable": "insights available",
+      "staffingOptimization": "Staffing Optimization",
+      "costOptimization": "Cost Optimization",
+      "efficiencyReport": "Efficiency Report",
+      "highPriority": "high priority",
+      "mediumPriority": "medium priority",
+      "lowPriority": "low priority",
+      "applySuggestion": "Apply Suggestion"
+    },
+    "loading": "Loading schedule...",
+    "generateAiSchedule": "Generate AI Schedule"
+  },
+  "staffManagement": {
+    "title": "Staff Management",
+    "subtitle": "Manage your team members and their availability schedules",
+    "addNewStaff": "Add New Staff",
+    "addFirstStaff": "Add Your First Staff Member",
+    "noStaffMessage": "No Staff Members Yet",
+    "noStaffDescription": "It looks like you haven't added any staff to your database. Click the button below to get started.",
+    "table": {
+      "staffMember": "Staff Member",
+      "role": "Role",
+      "contact": "Contact",
+      "hourlyRate": "Hourly Rate",
+      "actions": "Actions",
+      "hoursPerWeek": "hours/week",
+      "daysAvailable": "day available",
+      "daysAvailablePlural": "days available",
+      "noAvailability": "No availability set"
+    },
+    "modal": {
+      "addTitle": "Add New Staff Member",
+      "editTitle": "Edit Staff Member",
+      "addDescription": "Fill out the details below to add a new team member to your database.",
+      "editDescription": "Update the details below to modify this team member.",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phoneNumber": "Phone Number",
+      "role": "Role",
+      "hourlyRate": "Hourly Rate ($)",
+      "maxHoursWeek": "Max Hours/Week",
+      "availability": "Availability",
+      "cancel": "Cancel",
+      "addStaff": "Add Staff Member",
+      "updateStaff": "Update Staff Member",
+      "adding": "Adding...",
+      "updating": "Updating..."
+    },
+    "loading": "Loading staff data...",
+    "deleteConfirm": "Are you sure you want to delete this staff member? This action cannot be undone."
+  },
+  "staffDashboard": {
+    "loading": "Loading Staff Dashboard…",
+    "staffPortal": "Staff Portal",
+    "attendance": {
+      "title": "Attendance & Time Clock",
+      "signedInAs": "Signed in as {{email}}",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "pastShifts": "Past Shifts",
+      "noShifts": "No shifts recorded yet."
+    },
+    "pay": {
+      "title": "My Pay",
+      "currentPeriod": "Current Period",
+      "previousPeriod": "Previous Period"
+    },
+    "schedule": {
+      "title": "Shift Schedule",
+      "week": "Week",
+      "month": "Month",
+      "updated": "Updated"
+    },
+    "timeOff": {
+      "title": "Time Off Requests",
+      "myRequests": "My Requests",
+      "noRequests": "No requests submitted yet.",
+      "requestForm": {
+        "title": "Time Off Request",
+        "startDate": "Start Date (IST)",
+        "startTime": "Start Time (HH:MM)",
+        "endDate": "End Date (IST)",
+        "endTime": "End Time (HH:MM)",
+        "reason": "Reason (optional)",
+        "shortNote": "Short note",
+        "sending": "Sending...",
+        "sendRequest": "Send Request"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "viewAll": "View all"
+    }
+  },
+  "landing": {
+    "header": {
+      "aiScheduling": "AI Scheduling",
+      "ownerPortal": "Owner Portal",
+      "staffLogin": "Staff Login"
+    },
+    "breadcrumb": {
+      "browsing": "You're browsing: ",
+      "homePage": "Home / Landing Page",
+      "quickAccess": "Quick Access:",
+      "owner": "Owner",
+      "staff": "Staff",
+      "help": "Help"
+    },
+    "hero": {
+      "badge": "AI-Powered Scheduling Revolution",
+      "title1": "AI-Powered Staff",
+      "title2": "Scheduling",
+      "title3": "Made Simple",
+      "description": "Stop spending hours on shift planning. Let AI optimize your part-time staff schedules automatically, ensuring ",
+      "fairCoverage": "fair coverage",
+      "descriptionEnd": " while respecting availability.",
+      "startFreeSetup": "Start Free Setup",
+      "watchDemo": "Watch Demo",
+      "trustIndicators": {
+        "businesses": "Happy Businesses",
+        "shifts": "Shifts Generated",
+        "satisfaction": "Satisfaction"
+      },
+      "schedule": {
+        "weeklySchedule": "Weekly Schedule",
+        "aiOptimized": "AI Optimized ✨"
+      }
+    },
+    "features": {
+      "badge": "⚡ Powerful Features",
+      "title1": "Everything You Need for",
+      "title2": "Smart Scheduling",
+      "description": "Designed specifically for small shops with part-time staff. No AI experience required—just results.",
+      "aiSchedules": {
+        "title": "AI-Optimized Schedules",
+        "description": "Our intelligent AI considers staff availability, business hours, and workload to create optimal shift patterns that maximize efficiency."
+      },
+      "fairRotation": {
+        "title": "Fair Staff Rotation",
+        "description": "Ensure equal opportunities and prevent burnout with intelligent shift distribution that keeps everyone happy and engaged."
+      },
+      "mobilePortal": {
+        "title": "Mobile Staff Portal",
+        "description": "Staff can check their shifts, swap with colleagues, and update availability on their phones with our intuitive mobile app."
+      }
+    },
+    "howItWorks": {
+      "badge": "🚀 Simple 3-Step Process",
+      "title1": "Get Started in",
+      "title2": "Minutes",
+      "description": "No technical setup required. Just add your business details and staff—our AI handles the rest.",
+      "step1": {
+        "title": "Setup Your Shop",
+        "description": "Enter your business hours, roles, and basic information in our intuitive interface."
+      },
+      "step2": {
+        "title": "Add Your Staff",
+        "description": "Add part-time workers with their availability, skills, and contact details effortlessly."
+      },
+      "step3": {
+        "title": "Generate Schedules",
+        "description": "Click one button and let our AI create perfectly optimized shift schedules instantly.",
+        "badge": "✨ AI Magic Happens Here"
+      }
+    },
+    "cta": {
+      "badge": "🎉 Join The Revolution",
+      "title1": "Ready to Simplify Your",
+      "title2": "Scheduling?",
+      "description": "Join ",
+      "shopOwners": "hundreds of small shop owners",
+      "descriptionEnd": " who've saved hours every week with AI-powered scheduling magic.",
+      "startFreeSetup": "Start Your Free Setup",
+      "noCreditCard": "No credit card required",
+      "socialProof": {
+        "businesses": "Happy Businesses",
+        "timeSaved": "Average Time Saved/Month",
+        "support": "Expert Support"
+      }
+    },
+    "footer": {
+      "description": "Revolutionizing workforce planning for small businesses with AI-powered scheduling that actually works.",
+      "product": {
+        "title": "Product",
+        "features": "Features",
+        "pricing": "Pricing",
+        "apiDocs": "API Docs",
+        "integrations": "Integrations"
+      },
+      "support": {
+        "title": "Support",
+        "helpCenter": "Help Center",
+        "contact": "Contact Us",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+      },
+      "copyright": "© 2025 ShiftEasy. All rights reserved. Built with ❤️ for small businesses.",
+      "poweredByAI": "Powered by AI"
+    }
   }
 }

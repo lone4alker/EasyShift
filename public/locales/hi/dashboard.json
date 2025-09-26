@@ -57,17 +57,9 @@
       "title": "स्टाफ प्रबंधन",
       "subtitle": "टीम प्रबंधन"
     },
-    "analytics": {
-      "title": "विश्लेषण",
-      "subtitle": "रिपोर्ट देखें"
-    },
-    "attendance": {
-      "title": "उपस्थिति",
-      "subtitle": "समय ट्रैक करें"
-    },
-    "settings": {
-      "title": "सेटिंग्स",
-      "subtitle": "कॉन्फ़िगर करें"
+    "schedule": {
+      "title": "शेड्यूल",
+      "subtitle": "शिफ्ट प्रबंधन"
     }
   }
 }

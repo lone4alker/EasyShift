@@ -38,11 +38,249 @@
     "thisMonth": "Este Mes",
     "total": "Total",
     "name": "Nombre",
-    "email": "Correo",
+    "email": "Correo Electrónico",
     "phone": "Teléfono",
     "address": "Dirección",
     "search": "Buscar",
     "filter": "Filtrar",
     "sort": "Ordenar"
+  },
+  "schedule": {
+    "title": "Panel de Horarios",
+    "subtitle": "Gestiona y optimiza los horarios de tu personal",
+    "views": {
+      "calendarView": "Vista de Calendario",
+      "listView": "Vista de Lista",
+      "payroll": "Nómina",
+      "aiInsights": "Perspectivas IA"
+    },
+    "calendar": {
+      "scheduleCalendar": "Calendario de Horarios",
+      "noShifts": "Sin turnos",
+      "allStaff": "Todo el Personal",
+      "allRoles": "Todos los Roles"
+    },
+    "shifts": {
+      "totalShifts": "Turnos Totales",
+      "pendingApproval": "Pendientes de Aprobación",
+      "totalHours": "Horas Totales",
+      "estimatedPayroll": "Nómina Estimada",
+      "thisWeek": "Esta Semana",
+      "requiresAction": "Requiere acción",
+      "scheduled": "Programado",
+      "weeklyEstimate": "Estimación semanal",
+      "shiftsThisWeek": "Turnos Esta Semana",
+      "pendingApprovalAction": "pendiente de aprobación",
+      "publishAllShifts": "Publicar Todos los Turnos",
+      "approved": "Aprobado"
+    },
+    "payroll": {
+      "payrollSummary": "Resumen de Nómina",
+      "totalPayroll": "Nómina Total",
+      "overtimeHours": "Horas Extra",
+      "staffBreakdown": "Desglose del Personal",
+      "totalHoursLabel": "horas totales"
+    },
+    "ai": {
+      "aiRecommendations": "Recomendaciones de IA",
+      "insightsAvailable": "perspectivas disponibles",
+      "staffingOptimization": "Optimización del Personal",
+      "costOptimization": "Optimización de Costos",
+      "efficiencyReport": "Reporte de Eficiencia",
+      "highPriority": "alta prioridad",
+      "mediumPriority": "prioridad media",
+      "lowPriority": "baja prioridad",
+      "applySuggestion": "Aplicar Sugerencia"
+    },
+    "loading": "Cargando horarios...",
+    "generateAiSchedule": "Generar Horario con IA"
+  },
+  "staffManagement": {
+    "title": "Gestión de Personal",
+    "subtitle": "Gestiona los miembros de tu equipo y sus horarios de disponibilidad",
+    "addNewStaff": "Agregar Nuevo Personal",
+    "addFirstStaff": "Agregar Tu Primer Miembro del Personal",
+    "noStaffMessage": "Aún No Hay Miembros del Personal",
+    "noStaffDescription": "Parece que aún no has agregado personal a tu base de datos. Haz clic en el botón de abajo para comenzar.",
+    "table": {
+      "staffMember": "Miembro del Personal",
+      "role": "Rol",
+      "contact": "Contacto",
+      "hourlyRate": "Tarifa por Hora",
+      "actions": "Acciones",
+      "hoursPerWeek": "horas/semana",
+      "daysAvailable": "día disponible",
+      "daysAvailablePlural": "días disponibles",
+      "noAvailability": "Sin disponibilidad establecida"
+    },
+    "modal": {
+      "addTitle": "Agregar Nuevo Miembro del Personal",
+      "editTitle": "Editar Miembro del Personal",
+      "addDescription": "Completa los detalles a continuación para agregar un nuevo miembro del equipo a tu base de datos.",
+      "editDescription": "Actualiza los detalles a continuación para modificar este miembro del equipo.",
+      "fullName": "Nombre Completo",
+      "email": "Correo Electrónico",
+      "phoneNumber": "Número de Teléfono",
+      "role": "Rol",
+      "hourlyRate": "Tarifa por Hora ($)",
+      "maxHoursWeek": "Horas Máx/Semana",
+      "availability": "Disponibilidad",
+      "cancel": "Cancelar",
+      "addStaff": "Agregar Miembro del Personal",
+      "updateStaff": "Actualizar Miembro del Personal",
+      "adding": "Agregando...",
+      "updating": "Actualizando..."
+    },
+    "loading": "Cargando datos del personal...",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este miembro del personal? Esta acción no se puede deshacer."
+  },
+  "staffDashboard": {
+    "loading": "Cargando Panel de Personal…",
+    "staffPortal": "Portal del Personal",
+    "attendance": {
+      "title": "Asistencia y Control de Tiempo",
+      "signedInAs": "Conectado como {{email}}",
+      "clockIn": "Fichar Entrada",
+      "clockOut": "Fichar Salida",
+      "pastShifts": "Turnos Anteriores",
+      "noShifts": "No se han registrado turnos aún."
+    },
+    "pay": {
+      "title": "Mi Pago",
+      "currentPeriod": "Período Actual",
+      "previousPeriod": "Período Anterior"
+    },
+    "schedule": {
+      "title": "Horario de Turnos",
+      "week": "Semana",
+      "month": "Mes",
+      "updated": "Actualizado"
+    },
+    "timeOff": {
+      "title": "Solicitudes de Tiempo Libre",
+      "myRequests": "Mis Solicitudes",
+      "noRequests": "No se han enviado solicitudes aún.",
+      "requestForm": {
+        "title": "Solicitud de Tiempo Libre",
+        "startDate": "Fecha de Inicio (IST)",
+        "startTime": "Hora de Inicio (HH:MM)",
+        "endDate": "Fecha de Fin (IST)",
+        "endTime": "Hora de Fin (HH:MM)",
+        "reason": "Razón (opcional)",
+        "shortNote": "Nota breve",
+        "sending": "Enviando...",
+        "sendRequest": "Enviar Solicitud"
+      }
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "viewAll": "Ver todas"
+    }
+  },
+  "landing": {
+    "header": {
+      "aiScheduling": "Programación con IA",
+      "ownerPortal": "Portal del Propietario",
+      "staffLogin": "Acceso del Personal"
+    },
+    "breadcrumb": {
+      "browsing": "Estás navegando: ",
+      "homePage": "Inicio / Página Principal",
+      "quickAccess": "Acceso Rápido:",
+      "owner": "Propietario",
+      "staff": "Personal",
+      "help": "Ayuda"
+    },
+    "hero": {
+      "badge": "Revolución en Programación con IA",
+      "title1": "Programación de Personal",
+      "title2": "con IA",
+      "title3": "Hecha Simple",
+      "description": "Deja de pasar horas planificando turnos. Deja que la IA optimice automáticamente los horarios de tu personal de medio tiempo, asegurando ",
+      "fairCoverage": "cobertura equitativa",
+      "descriptionEnd": " mientras respeta la disponibilidad.",
+      "startFreeSetup": "Comenzar Configuración Gratis",
+      "watchDemo": "Ver Demostración",
+      "trustIndicators": {
+        "businesses": "Empresas Felices",
+        "shifts": "Turnos Generados",
+        "satisfaction": "Satisfacción"
+      },
+      "schedule": {
+        "weeklySchedule": "Horario Semanal",
+        "aiOptimized": "Optimizado por IA ✨"
+      }
+    },
+    "features": {
+      "badge": "⚡ Características Poderosas",
+      "title1": "Todo lo que Necesitas para",
+      "title2": "Programación Inteligente",
+      "description": "Diseñado específicamente para pequeñas tiendas con personal de medio tiempo. No se requiere experiencia en IA, solo resultados.",
+      "aiSchedules": {
+        "title": "Horarios Optimizados por IA",
+        "description": "Nuestra IA inteligente considera la disponibilidad del personal, horarios comerciales y carga de trabajo para crear patrones de turnos óptimos que maximizan la eficiencia."
+      },
+      "fairRotation": {
+        "title": "Rotación Justa del Personal",
+        "description": "Asegura oportunidades iguales y previene el agotamiento con distribución inteligente de turnos que mantiene a todos felices y comprometidos."
+      },
+      "mobilePortal": {
+        "title": "Portal Móvil del Personal",
+        "description": "El personal puede ver sus turnos, intercambiar con colegas y actualizar disponibilidad en sus teléfonos con nuestra aplicación móvil intuitiva."
+      }
+    },
+    "howItWorks": {
+      "badge": "🚀 Proceso Simple de 3 Pasos",
+      "title1": "Comienza en",
+      "title2": "Minutos",
+      "description": "No se requiere configuración técnica. Solo agrega los detalles de tu negocio y personal, nuestra IA se encarga del resto.",
+      "step1": {
+        "title": "Configura tu Tienda",
+        "description": "Ingresa tus horarios comerciales, roles e información básica en nuestra interfaz intuitiva."
+      },
+      "step2": {
+        "title": "Agrega tu Personal",
+        "description": "Agrega trabajadores de medio tiempo con su disponibilidad, habilidades y detalles de contacto sin esfuerzo."
+      },
+      "step3": {
+        "title": "Genera Horarios",
+        "description": "Haz clic en un botón y deja que nuestra IA cree horarios de turnos perfectamente optimizados al instante.",
+        "badge": "✨ Aquí Ocurre la Magia de IA"
+      }
+    },
+    "cta": {
+      "badge": "🎉 Únete a la Revolución",
+      "title1": "¿Listo para Simplificar tu",
+      "title2": "Programación?",
+      "description": "Únete a ",
+      "shopOwners": "cientos de propietarios de pequeñas tiendas",
+      "descriptionEnd": " que han ahorrado horas cada semana con la magia de programación impulsada por IA.",
+      "startFreeSetup": "Inicia tu Configuración Gratis",
+      "noCreditCard": "No se requiere tarjeta de crédito",
+      "socialProof": {
+        "businesses": "Empresas Felices",
+        "timeSaved": "Tiempo Promedio Ahorrado/Mes",
+        "support": "Soporte Experto"
+      }
+    },
+    "footer": {
+      "description": "Revolucionando la planificación de la fuerza laboral para pequeñas empresas con programación impulsada por IA que realmente funciona.",
+      "product": {
+        "title": "Producto",
+        "features": "Características",
+        "pricing": "Precios",
+        "apiDocs": "Documentos API",
+        "integrations": "Integraciones"
+      },
+      "support": {
+        "title": "Soporte",
+        "helpCenter": "Centro de Ayuda",
+        "contact": "Contáctanos",
+        "privacy": "Política de Privacidad",
+        "terms": "Términos de Servicio"
+      },
+      "copyright": "© 2025 ShiftEasy. Todos los derechos reservados. Construido con ❤️ para pequeñas empresas.",
+      "poweredByAI": "Impulsado por IA"
+    }
   }
 }

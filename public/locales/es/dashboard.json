@@ -51,5 +51,15 @@
     "allSystemsActive": "Todos los Sistemas Activos",
     "lastUpdated": "Última Actualización"
   },
-  "loadingMessage": "Cargando panel..."
+  "loadingMessage": "Cargando panel...",
+  "quickActionItems": {
+    "staffManagement": {
+      "title": "Gestión de Personal",
+      "subtitle": "Gestionar equipo"
+    },
+    "schedule": {
+      "title": "Horario",
+      "subtitle": "Gestionar turnos"
+    }
+  }
 }

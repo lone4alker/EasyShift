@@ -57,17 +57,9 @@
       "title": "कर्मचारी व्यवस्थापन",
       "subtitle": "टीम व्यवस्थापित करा"
     },
-    "analytics": {
-      "title": "विश्लेषण",
-      "subtitle": "अहवाल पहा"
-    },
-    "attendance": {
-      "title": "उपस्थिती",
-      "subtitle": "वेळ ट्रॅक करा"
-    },
-    "settings": {
-      "title": "सेटिंग्ज",
-      "subtitle": "कॉन्फिगर करा"
+    "schedule": {
+      "title": "वेळापत्रक",
+      "subtitle": "शिफ्ट व्यवस्थापन"
     }
   }
 }

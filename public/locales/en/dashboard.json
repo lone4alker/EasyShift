@@ -57,17 +57,9 @@
       "title": "Staff Management",
       "subtitle": "Manage team"
     },
-    "analytics": {
-      "title": "Analytics",
-      "subtitle": "View reports"
-    },
-    "attendance": {
-      "title": "Attendance",
-      "subtitle": "Track time"
-    },
-    "settings": {
-      "title": "Settings",
-      "subtitle": "Configure"
+    "schedule": {
+      "title": "Schedule",
+      "subtitle": "Manage shifts"
     }
   }
 }

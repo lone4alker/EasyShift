@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
+import { useT } from '@/app/utils/translations';
+import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 
 export default function ScheduleDashboardPage() {
+  const { t } = useT();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ownerData, setOwnerData] = useState(null);
   const router = useRouter();
-  const [scheduleView, setScheduleView] = useState('Calendar View');
+  const [scheduleView, setScheduleView] = useState('calendarView');
   const [scheduleData, setScheduleData] = useState({
     totalShifts: 4,
     pendingApproval: 2,
@@ -117,17 +120,17 @@ export default function ScheduleDashboardPage() {
 
   const renderScheduleSubView = () => {
     switch (scheduleView) {
-      case 'Calendar View':
+      case 'calendarView':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">Schedule Calendar</h3>
+              <h3 className="text-xl font-semibold text-slate-800">{t('schedule.calendar.scheduleCalendar')}</h3>
               <div className="flex items-center space-x-4">
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
-                  <option>All Staff</option>
+                  <option>{t('schedule.calendar.allStaff')}</option>
                 </select>
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
-                  <option>All Roles</option>
+                  <option>{t('schedule.calendar.allRoles')}</option>
                 </select>
                 <div className="flex items-center space-x-2">
                   <button className="text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors">
@@ -152,14 +155,14 @@ export default function ScheduleDashboardPage() {
               <div className="grid grid-cols-7 gap-2 min-h-48">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="p-4 bg-white border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 text-sm hover:border-blue-300 transition-colors">
-                    No shifts
+                    {t('schedule.calendar.noShifts')}
                   </div>
                 ))}
               </div>
             </div>
           </div>
         );
-      case 'List View':
+      case 'listView':
         return (
           <div>
             <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-xl mb-6 flex items-center justify-between">
@@ -169,10 +172,10 @@ export default function ScheduleDashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                   </svg>
                 </div>
-                <span className="font-medium">{scheduleData.pendingApproval} shift(s) pending approval</span>
+                <span className="font-medium">{scheduleData.pendingApproval} {t('schedule.shifts.pendingApprovalAction')}</span>
               </div>
               <button className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 cursor-pointer">
-                Publish All Shifts
+                {t('schedule.shifts.publishAllShifts')}
               </button>
             </div>
             <div className="space-y-4">
@@ -191,14 +194,14 @@ export default function ScheduleDashboardPage() {
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Approved
+                    {t('schedule.shifts.approved')}
                   </span>
                 </div>
               ))}
             </div>
           </div>
         );
-      case 'Payroll':
+      case 'payroll':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -240,13 +243,13 @@ export default function ScheduleDashboardPage() {
             </div>
           </div>
         );
-      case 'AI Insights':
+      case 'aiInsights':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">AI Recommendations</h3>
+              <h3 className="text-xl font-semibold text-slate-800">{t('schedule.ai.aiRecommendations')}</h3>
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                3 insights available
+                3 {t('schedule.ai.insightsAvailable')}
               </span>
             </div>
             <div className="space-y-4">
@@ -259,9 +262,9 @@ export default function ScheduleDashboardPage() {
                       </svg>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-800">Staffing Optimization</span>
+                      <span className="font-semibold text-slate-800">{t('schedule.ai.staffingOptimization')}</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 ml-2">
-                        high priority
+                        {t('schedule.ai.highPriority')}
                       </span>
                     </div>
                   </div>
@@ -291,9 +294,9 @@ export default function ScheduleDashboardPage() {
                       </svg>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-800">Cost Optimization</span>
+                      <span className="font-semibold text-slate-800">{t('schedule.ai.costOptimization')}</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 ml-2">
-                        medium priority
+                        {t('schedule.ai.mediumPriority')}
                       </span>
                     </div>
                   </div>
@@ -303,7 +306,7 @@ export default function ScheduleDashboardPage() {
                   <span className="text-xs text-slate-500">September 26, 2025</span>
                   <div className="flex space-x-2">
                     <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                      Apply Suggestion
+                      {t('schedule.ai.applySuggestion')}
                     </button>
                     <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
                       <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
@@ -323,9 +326,9 @@ export default function ScheduleDashboardPage() {
                       </svg>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-800">Efficiency Report</span>
+                      <span className="font-semibold text-slate-800">{t('schedule.ai.efficiencyReport')}</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 ml-2">
-                        low priority
+                        {t('schedule.ai.lowPriority')}
                       </span>
                     </div>
                   </div>
@@ -355,7 +358,7 @@ export default function ScheduleDashboardPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading schedule...</p>
+          <p className="text-slate-600">{t('schedule.loading')}</p>
         </div>
       </div>
     );
@@ -389,7 +392,7 @@ export default function ScheduleDashboardPage() {
                   </svg>
                 </div>
                 <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  ShiftEasy
+                  {t('appName')}
                 </h1>
               </Link>
 
@@ -399,34 +402,36 @@ export default function ScheduleDashboardPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                   </svg>
-                  <span className="text-sm">Dashboard</span>
+                  <span className="text-sm">{t('navigation.dashboard')}</span>
                 </Link>
                 
                 <Link href="/owner/staff-management" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <span className="text-sm">Staff Management</span>
+                  <span className="text-sm">{t('navigation.staffManagement')}</span>
                 </Link>
                 
                 <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
                   </svg>
-                  <span className="text-sm">Schedule</span>
+                  <span className="text-sm">{t('navigation.schedule')}</span>
                 </div>
 
                 <Link href="/owner/analytics" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  <span className="text-sm">Analytics</span>
+                  <span className="text-sm">{t('navigation.analytics')}</span>
                 </Link>
               </div>
             </div>
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
               {/* Generate Schedule Button */}
               {/* <button className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center cursor-pointer">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -446,7 +451,7 @@ export default function ScheduleDashboardPage() {
                 <button
                   onClick={handleSignOut}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  title="Sign Out"
+                  title={t('buttons.signOut')}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -465,7 +470,7 @@ export default function ScheduleDashboardPage() {
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
             </svg>
-            <span className="text-xs">Home</span>
+            <span className="text-xs">{t('navigation.home')}</span>
           </Link>
           <span className="text-slate-400">/</span>
           <Link href="/owner/dashboard" className="text-slate-500 hover:text-blue-600 transition-colors duration-200">
@@ -488,20 +493,20 @@ export default function ScheduleDashboardPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-1">Schedule Dashboard</h2>
-                <p className="text-slate-600 text-xs">Manage and optimize your staff schedules</p>
+                <h2 className="text-xl font-bold text-slate-800 mb-1">{t('schedule.title')}</h2>
+                <p className="text-slate-600 text-xs">{t('schedule.subtitle')}</p>
                 <div className="flex items-center mt-3 space-x-3">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {scheduleData.totalShifts} Shifts This Week
+                    {scheduleData.totalShifts} {t('schedule.shifts.shiftsThisWeek')}
                   </span>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                     </svg>
-                    {scheduleData.pendingApproval} Pending Approval
+                    {scheduleData.pendingApproval} {t('schedule.shifts.pendingApproval')}
                   </span>
                 </div>
               </div>
@@ -511,7 +516,7 @@ export default function ScheduleDashboardPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
-                <span className="text-sm">Generate AI Schedule</span>
+                <span className="text-sm">{t('schedule.generateAiSchedule')}</span>
               </button>
             </div>
           </div>
@@ -528,8 +533,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.totalShifts}</p>
-              <p className="text-sm font-medium text-slate-600">Total Shifts</p>
-              <p className="text-xs text-green-600 mt-1">↗ This week</p>
+              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.totalShifts')}</p>
+              <p className="text-xs text-green-600 mt-1">↗ {t('schedule.shifts.thisWeek')}</p>
             </div>
           </div>
 
@@ -543,8 +548,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.pendingApproval}</p>
-              <p className="text-sm font-medium text-slate-600">Pending Approval</p>
-              <p className="text-xs text-yellow-600 mt-1">↗ Requires action</p>
+              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.pendingApproval')}</p>
+              <p className="text-xs text-yellow-600 mt-1">↗ {t('schedule.shifts.requiresAction')}</p>
             </div>
           </div>
 
@@ -558,8 +563,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{scheduleData.totalHours.toFixed(1)}</p>
-              <p className="text-sm font-medium text-slate-600">Total Hours</p>
-              <p className="text-xs text-green-600 mt-1">↗ Scheduled</p>
+              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.totalHours')}</p>
+              <p className="text-xs text-green-600 mt-1">↗ {t('schedule.shifts.scheduled')}</p>
             </div>
           </div>
 
@@ -573,8 +578,8 @@ export default function ScheduleDashboardPage() {
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-900 mb-1">${scheduleData.estPayroll.toFixed(0)}</p>
-              <p className="text-sm font-medium text-slate-600">Est. Payroll</p>
-              <p className="text-xs text-blue-600 mt-1">↗ Weekly estimate</p>
+              <p className="text-sm font-medium text-slate-600">{t('schedule.shifts.estimatedPayroll')}</p>
+              <p className="text-xs text-blue-600 mt-1">↗ {t('schedule.shifts.weeklyEstimate')}</p>
             </div>
           </div>
         </div>
@@ -582,7 +587,10 @@ export default function ScheduleDashboardPage() {
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 mb-8">
           <div className="border-b border-slate-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {['Calendar View', 'List View', 'Payroll', 'AI Insights'].map(view => (
+              {[t('schedule.views.calendarView'), t('schedule.views.listView'), t('schedule.views.payroll'), t('schedule.views.aiInsights')].map((viewLabel, index) => {
+                const viewKeys = ['calendarView', 'listView', 'payroll', 'aiInsights'];
+                const view = viewKeys[index];
+                return (
                 <button
                   key={view}
                   onClick={() => setScheduleView(view)}
@@ -592,9 +600,10 @@ export default function ScheduleDashboardPage() {
                       : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  {view}
+                  {viewLabel}
                 </button>
-              ))}
+              );
+              })}
             </nav>
           </div>
           {/* Render sub-view */}

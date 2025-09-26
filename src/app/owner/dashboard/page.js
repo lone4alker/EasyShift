@@ -237,23 +237,23 @@ export default function OwnerDashboard() {
 
       {/* Enhanced Modern Navigation */}
       <nav className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-lg">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between overflow-visible">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
             {/* Logo and Brand */}
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-2 sm:space-x-8">
+              <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-md sm:rounded-lg flex items-center justify-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-sm sm:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   {t('appName')}
                 </h1>
               </Link>
 
-              {/* Main Navigation */}
-              <div className="hidden md:flex items-center space-x-1">
+              {/* Main Navigation - Desktop Only */}
+              <div className="hidden lg:flex items-center space-x-1">
                 <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -285,13 +285,15 @@ export default function OwnerDashboard() {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center space-x-4 overflow-visible">
-              {/* Language Switcher */}
-              <LanguageSwitcher />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Language Switcher - Desktop Only */}
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
               
               {/* User Info */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="text-right hidden md:block">
                   <p className="text-sm font-medium text-slate-800">{ownerData?.owner_full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Admin User'}</p>
                   <p className="text-xs text-slate-500">Owner</p>
                 </div>
@@ -311,7 +313,7 @@ export default function OwnerDashboard() {
       </nav>
 
       {/* Breadcrumb Navigation */}
-      <div className="relative z-10 container mx-auto px-6 py-4">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <nav className="flex items-center space-x-2 text-sm">
           <Link href="/" className="text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center">
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +322,7 @@ export default function OwnerDashboard() {
             <span className="text-xs">{tDashboard('breadcrumb.home')}</span>
           </Link>
           <span className="text-slate-400">/</span>
-          <span className="text-slate-700 font-medium">{tDashboard('breadcrumb.ownerDashboard')}</span>
+          <span className="text-slate-700 font-medium text-xs sm:text-sm">{tDashboard('breadcrumb.ownerDashboard')}</span>
         </nav>
       </div>
 
@@ -366,85 +368,85 @@ export default function OwnerDashboard() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
             {/* Total Staff */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-blue-100 rounded-lg sm:rounded-xl">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalStaff}</p>
-                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.totalStaff')}</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900 mb-1">{stats.totalStaff}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">{tDashboard('stats.totalStaff')}</p>
                 <p className="text-xs text-green-600 mt-1">↗ +2 this month</p>
               </div>
             </div>
 
             {/* Active Staff */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-green-100 rounded-lg sm:rounded-xl">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{stats.activeStaff}</p>
-                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.activeStaff')}</p>
-                <p className="text-xs text-green-600 mt-1">↗ 92% {tDashboard('stats.activeRate')}</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900 mb-1">{stats.activeStaff}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">{tDashboard('stats.activeStaff')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ 92%</p>
               </div>
             </div>
 
             {/* Today's Attendance */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-indigo-100 rounded-xl">
-                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-indigo-100 rounded-lg sm:rounded-xl">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{stats.todaysAttendance}</p>
-                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.todaysAttendance')}</p>
-                <p className="text-xs text-green-600 mt-1">↗ {tDashboard('stats.onTime')}: 95%</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900 mb-1">{stats.todaysAttendance}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">{tDashboard('stats.todaysAttendance')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ 95%</p>
               </div>
             </div>
 
             {/* Monthly Revenue */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg sm:rounded-xl">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">₹{stats.monthlyRevenue.toLocaleString()}</p>
-                <p className="text-sm font-medium text-slate-600">{tDashboard('stats.monthlyRevenue')}</p>
-                <p className="text-xs text-green-600 mt-1">↗ +15% {tDashboard('stats.fromLastMonth')}</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900 mb-1">₹{stats.monthlyRevenue.toLocaleString()}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600">{tDashboard('stats.monthlyRevenue')}</p>
+                <p className="text-xs text-green-600 mt-1">↗ +15%</p>
               </div>
             </div>
           </div>
 
           {/* Quick Actions & Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-10">
             {/* Management Actions */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">{tDashboard('quickActions.title')}</h2>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg border border-slate-200/50">
+                <h2 className="text-lg sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">{tDashboard('quickActions.title')}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Link
                     href="/owner/staff-management"
-                    className="group flex items-center p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all duration-200 border border-blue-200/50"
+                    className="group flex items-center p-3 sm:p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-blue-200/50"
                   >
                     <div className="p-2 bg-blue-100 group-hover:bg-blue-200 rounded-lg mr-3 transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                       </svg>
                     </div>
@@ -454,87 +456,65 @@ export default function OwnerDashboard() {
                     </div>
                   </Link>
 
-                  <button className="group flex items-center p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-all duration-200 border border-green-200/50">
+                  <Link
+                    href="/owner/schedule"
+                    className="group flex items-center p-3 sm:p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg sm:rounded-xl transition-all duration-200 border border-green-200/50"
+                  >
                     <div className="p-2 bg-green-100 group-hover:bg-green-200 rounded-lg mr-3 transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.analytics.title', 'Analytics')}</p>
-                      <p className="text-xs text-green-600">{tDashboard('quickActionItems.analytics.subtitle', 'View reports')}</p>
+                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.schedule.title', 'Schedule')}</p>
+                      <p className="text-xs text-green-600">{tDashboard('quickActionItems.schedule.subtitle', 'Manage shifts')}</p>
                     </div>
-                  </button>
-
-                  <button className="group flex items-center p-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-all duration-200 border border-indigo-200/50">
-                    <div className="p-2 bg-indigo-100 group-hover:bg-indigo-200 rounded-lg mr-3 transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.attendance.title', 'Attendance')}</p>
-                      <p className="text-xs text-indigo-600">{tDashboard('quickActionItems.attendance.subtitle', 'Track time')}</p>
-                    </div>
-                  </button>
-
-                  <button className="group flex items-center p-4 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl transition-all duration-200 border border-purple-200/50">
-                    <div className="p-2 bg-purple-100 group-hover:bg-purple-200 rounded-lg mr-3 transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{tDashboard('quickActionItems.settings.title', 'Settings')}</p>
-                      <p className="text-xs text-purple-600">{tDashboard('quickActionItems.settings.subtitle', 'Configure')}</p>
-                    </div>
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">{tDashboard('recentActivity.title')}</h2>
-                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('buttons.viewAll')}</button>
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">{tDashboard('recentActivity.title')}</h2>
+                <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium">{t('buttons.viewAll')}</button>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                  <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.newStaffAdded')}</p>
+                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.newStaffAdded')}</p>
                     <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.staffJoined', { name: 'John Doe', position: 'cashier' })}</p>
                     <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 2 })}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                  <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.perfectAttendance')}</p>
+                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.perfectAttendance')}</p>
                     <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.allStaffCheckedIn')}</p>
                     <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 4 })}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                  <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{tDashboard('recentActivity.monthlyReport')}</p>
+                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.monthlyReport')}</p>
                     <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.revenueUp', { percentage: 15 })}</p>
                     <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.yesterday')}</p>
                   </div>
@@ -544,59 +524,59 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Performance Overview */}
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">{tDashboard('performance.title')}</h2>
-              <select className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg border border-slate-200/50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-8 space-y-3 sm:space-y-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-slate-900">{tDashboard('performance.title')}</h2>
+              <select className="text-xs sm:text-sm border border-slate-300 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 bg-white">
                 <option>{t('common.thisMonth')}</option>
                 <option>{t('common.lastMonth')}</option>
                 <option>Last 3 Months</option>
               </select>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
               {/* Attendance Trends */}
               <div className="text-center">
-                <div className="relative w-28 h-28 mx-auto mb-4">
-                  <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 36 36">
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-3 sm:mb-4">
+                  <svg className="w-20 h-20 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 36 36">
                     <path className="text-slate-200" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <path className="text-blue-500" strokeWidth="3" strokeLinecap="round" fill="none" stroke="currentColor" strokeDasharray="92, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-slate-900">92%</span>
+                    <span className="text-lg sm:text-2xl font-bold text-slate-900">92%</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.attendanceRate')}</h3>
-                <p className="text-sm text-slate-600">{tDashboard('performance.monthlyAverage')}</p>
+                <h3 className="font-semibold text-slate-900 mb-1 text-sm sm:text-base">{tDashboard('performance.attendanceRate')}</h3>
+                <p className="text-xs sm:text-sm text-slate-600">{tDashboard('performance.monthlyAverage')}</p>
               </div>
 
               {/* Staff Satisfaction */}
               <div className="text-center">
-                <div className="relative w-28 h-28 mx-auto mb-4">
-                  <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 36 36">
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-3 sm:mb-4">
+                  <svg className="w-20 h-20 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 36 36">
                     <path className="text-slate-200" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <path className="text-green-500" strokeWidth="3" strokeLinecap="round" fill="none" stroke="currentColor" strokeDasharray="96, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-slate-900">4.8</span>
+                    <span className="text-lg sm:text-2xl font-bold text-slate-900">4.8</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.staffRating')}</h3>
-                <p className="text-sm text-slate-600">{tDashboard('performance.outOfFive')}</p>
+                <h3 className="font-semibold text-slate-900 mb-1 text-sm sm:text-base">{tDashboard('performance.staffRating')}</h3>
+                <p className="text-xs sm:text-sm text-slate-600">{tDashboard('performance.outOfFive')}</p>
               </div>
 
               {/* Revenue Growth */}
               <div className="text-center">
-                <div className="relative w-28 h-28 mx-auto mb-4">
-                  <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 36 36">
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-3 sm:mb-4">
+                  <svg className="w-20 h-20 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 36 36">
                     <path className="text-slate-200" strokeWidth="3" fill="none" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <path className="text-purple-500" strokeWidth="3" strokeLinecap="round" fill="none" stroke="currentColor" strokeDasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-slate-900">+15%</span>
+                    <span className="text-base sm:text-xl font-bold text-slate-900">+15%</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-1">{tDashboard('performance.revenueGrowth')}</h3>
-                <p className="text-sm text-slate-600">{tDashboard('performance.vsLastMonth')}</p>
+                <h3 className="font-semibold text-slate-900 mb-1 text-sm sm:text-base">{tDashboard('performance.revenueGrowth')}</h3>
+                <p className="text-xs sm:text-sm text-slate-600">{tDashboard('performance.vsLastMonth')}</p>
               </div>
             </div>
           </div>
