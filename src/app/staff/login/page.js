@@ -45,7 +45,7 @@ export default function StaffLogin() {
             <ul className="mt-2 ml-4 list-disc text-sm">
               <li>No staff account exists with this email</li>
               <li>Password is incorrect</li>
-              <li>Email hasn't been confirmed yet</li>
+              <li>Email hasn&apos;t been confirmed yet</li>
             </ul>
             <p className="mt-2 text-sm">
               <a href="/debug" className="text-emerald-600 hover:underline">Check debug page</a> or{' '}

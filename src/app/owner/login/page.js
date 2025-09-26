@@ -91,7 +91,7 @@ export default function OwnerLogin() {
               <ul className="mt-2 ml-4 list-disc text-sm">
                 <li>No account exists with this email</li>
                 <li>Password is incorrect</li>
-                <li>Email hasn't been confirmed yet</li>
+                <li>Email hasn&apos;t been confirmed yet</li>
               </ul>
               <div className="mt-3 space-x-2">
                 <button
@@ -367,7 +367,7 @@ export default function OwnerLogin() {
                   </button>
                 </div>
                 <p className="text-sm text-blue-700 mb-3">
-                  Haven't received the confirmation email? We can resend it to: <strong>{email}</strong>
+                  Haven&apos;t received the confirmation email? We can resend it to: <strong>{email}</strong>
                 </p>
                 <button
                   onClick={resendConfirmationEmail}
@@ -387,7 +387,7 @@ export default function OwnerLogin() {
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="text-center">
                 <p className="text-sm text-slate-600 mb-4">
-                  Don't have an account?
+                  Don&apos;t have an account?
                 </p>
                 <Link
                   href="/owner/signup"
@@ -404,9 +404,9 @@ export default function OwnerLogin() {
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="text-xs text-yellow-700">
-                    <strong>Development Mode:</strong> If you're getting "Invalid credentials" errors:
+                    <strong>Development Mode:</strong> If you&apos;re getting &quot;Invalid credentials&quot; errors:
                     <ul className="mt-1 ml-4 list-disc">
-                      <li>Make sure you've completed the signup process first</li>
+                      <li>Make sure you&apos;ve completed the signup process first</li>
                       <li>Check your email for the confirmation link from Supabase</li>
                       <li>Verify your Supabase project is properly configured</li>
                       <li>Check browser console for detailed error messages</li>

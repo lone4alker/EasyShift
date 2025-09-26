@@ -44,7 +44,7 @@ export default function ScheduleDashboardPage() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
@@ -301,7 +301,7 @@ export default function ScheduleDashboardPage() {
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-slate-700 mb-4">Reducing Mike's Friday shift by 1 hour could save $14 weekly while maintaining adequate coverage during slower periods</p>
+                <p className="text-sm text-slate-700 mb-4">Reducing Mike&apos;s Friday shift by 1 hour could save $14 weekly while maintaining adequate coverage during slower periods</p>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-500">September 26, 2025</span>
                   <div className="flex space-x-2">

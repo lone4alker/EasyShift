@@ -25,13 +25,13 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   useEffect(() => {
     if (user) {
       loadDashboardData();
     }
-  }, [user]);
+  }, [user, loadDashboardData]);
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
