@@ -11,7 +11,7 @@ import holidays
 
 load_dotenv()
 class StoreRecommendationAgent:
-    def _init_(self, supabase_url: str, supabase_key: str, gemini_api_key: str):
+    def __init__(self, supabase_url: str, supabase_key: str, gemini_api_key: str):
         """Initialize the AI recommendation agent with database and AI service connections."""
         self.supabase: Client = create_client(supabase_url, supabase_key)
         # Initialize Gemini client (uses provided key or env fallback if supported)
@@ -558,7 +558,7 @@ def create_flask_api():
     from flask import Flask, request, jsonify
     from flask_cors import CORS
 
-    app = Flask(_name_)
+    app = Flask(__name__)
     CORS(app)
 
     @app.route('/api/recommendations', methods=['POST'])
@@ -636,6 +636,6 @@ def create_flask_api():
 
     return app
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     app = create_flask_api()
     app.run(host='127.0.0.1', port=5000, debug=True)
