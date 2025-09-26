@@ -16,12 +16,18 @@ export default function OwnerDashboard() {
     todaysAttendance: 0,
     monthlyRevenue: 0
   });
+  const [businessId, setBusinessId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     checkAuth();
-    loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
@@ -59,6 +65,7 @@ export default function OwnerDashboard() {
         if (!error && businessData) {
           console.log('Successfully found business data:', businessData);
           setOwnerData(businessData);
+          setBusinessId(businessData.id);
           return;
         }
       } catch (err) {
@@ -81,13 +88,112 @@ export default function OwnerDashboard() {
   };
 
   const loadDashboardData = async () => {
-    // Mock data - replace with actual Supabase queries
-    setStats({
-      totalStaff: 25,
-      activeStaff: 23,
-      todaysAttendance: 22,
-      monthlyRevenue: 125000
-    });
+    if (!user) {
+      console.log('No user found, skipping dashboard data load');
+      return;
+    }
+    
+    try {
+      console.log('Loading dashboard data for user:', user.id);
+      
+      // Step 1: Get all business IDs owned by the current user
+      const { data: userBusinesses, error: businessError } = await supabase
+        .from('businesses')
+        .select('business_id')
+        .eq('owner_id', user.id);
+        
+      console.log('User businesses:', { data: userBusinesses, error: businessError });
+      
+      if (businessError) {
+        console.error('Error fetching businesses:', businessError);
+        setStats(prevStats => ({
+          ...prevStats,
+          totalStaff: 0,
+          activeStaff: 0,
+          todaysAttendance: 0
+        }));
+        return;
+      }
+      
+      if (!userBusinesses || userBusinesses.length === 0) {
+        console.log('No businesses found for user');
+        setStats(prevStats => ({
+          ...prevStats,
+          totalStaff: 0,
+          activeStaff: 0,
+          todaysAttendance: 0
+        }));
+        return;
+      }
+      
+      // Step 2: Extract business IDs
+      const businessIds = userBusinesses.map(b => b.business_id);
+      console.log('Business IDs to search for:', businessIds);
+      
+      // Step 3: Count staff members where business_id is in the user's business IDs
+      const { count: totalStaffCount, error: totalStaffError } = await supabase
+        .from('staff_members')
+        .select('*', { count: 'exact', head: true })
+        .in('business_id', businessIds);
+        
+      console.log('Total staff count:', { count: totalStaffCount, error: totalStaffError });
+      
+      if (totalStaffError) {
+        console.error('Error counting total staff:', totalStaffError);
+        setStats(prevStats => ({
+          ...prevStats,
+          totalStaff: 0,
+          activeStaff: 0,
+          todaysAttendance: 0
+        }));
+        return;
+      }
+      
+      // Step 4: Count active staff members
+      const { count: activeStaffCount, error: activeStaffError } = await supabase
+        .from('staff_members')
+        .select('*', { count: 'exact', head: true })
+        .in('business_id', businessIds)
+        .eq('is_active', true);
+        
+      console.log('Active staff count:', { count: activeStaffCount, error: activeStaffError });
+      
+      // Step 5: Get sample data for verification
+      const { data: sampleStaff, error: sampleError } = await supabase
+        .from('staff_members')
+        .select('id, first_name, last_name, business_id, is_active')
+        .in('business_id', businessIds)
+        .limit(5);
+        
+      console.log('Sample staff data:', { data: sampleStaff, error: sampleError });
+
+      const totalStaff = totalStaffCount || 0;
+      const activeStaff = activeStaffCount || 0;
+
+      setStats(prevStats => ({
+        ...prevStats,
+        totalStaff: totalStaff,
+        activeStaff: activeStaff,
+        todaysAttendance: activeStaff
+      }));
+
+      console.log('Dashboard stats updated successfully:', { 
+        totalStaff, 
+        activeStaff,
+        businessIds,
+        userId: user.id,
+        sampleData: sampleStaff
+      });
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setStats(prevStats => ({
+        ...prevStats,
+        totalStaff: 0,
+        activeStaff: 0,
+        todaysAttendance: 0
+      }));
+    }
   };
 
   const handleSignOut = async () => {
