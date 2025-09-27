@@ -132,7 +132,7 @@ export default function ScheduleDashboardPage() {
     }
   };
 
-  const fetchOwnerData = async (user) => {
+  const fetchOwnerData = useCallback(async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
     let businessData = null;
     
@@ -162,7 +162,7 @@ export default function ScheduleDashboardPage() {
     } else {
       console.log('No business data found for user');
     }
-  };
+  }, []);
 
   const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();

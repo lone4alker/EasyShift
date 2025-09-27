@@ -580,7 +580,7 @@ export default function StaffManagementPage() {
         ) : staff.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 text-center">
             <svg className="w-16 h-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinecap="round" strokeWidth={1} d="M21 13a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1h16a1 1 0 011 1v6zm-10 1h2m-2 4h2m-4-4h2m-2 4h2m-2-4h2m-2 4h2m-2-4h2m-2 4h2M9 5h6M7 7h10" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 13a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1h16a1 1 0 011 1v6zm-10 1h2m-2 4h2m-4-4h2m-2 4h2m-2-4h2m-2 4h2m-2-4h2m-2 4h2M9 5h6M7 7h10" />
             </svg>
             <h3 className="text-xl font-semibold text-slate-700">{t('staffManagement.noStaffMessage')}</h3>
             <p className="text-slate-500 mt-2 max-w-sm">

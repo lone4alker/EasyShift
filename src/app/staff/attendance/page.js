@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -34,14 +34,14 @@ export default function StaffAttendance() {
     };
   }, [checkAuth, stream]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/staff/login');
     } else {
       setUser(user);
     }
-  };
+  }, [router]);
 
   const initializeCamera = async () => {
     try {

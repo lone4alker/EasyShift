@@ -149,7 +149,7 @@ export default function QRScannerPage() {
       setIsScanning(false);
       setCameraInitialized(false);
     }
-  }, [cameraInitialized, cameraStream]);
+  }, [cameraInitialized, cameraStream, scanningStarted]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -370,6 +370,7 @@ export default function QRScannerPage() {
       clearTimeout(timer);
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - run only once
 
   return (
