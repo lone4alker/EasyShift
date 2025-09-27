@@ -8,12 +8,6 @@ export default function AIInsights({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchAIInsights();
-    }
-  }, [user, fetchAIInsights]);
-
   const fetchAIInsights = useCallback(async () => {
     try {
       setLoading(true);
@@ -91,6 +85,12 @@ export default function AIInsights({ user }) {
       setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAIInsights();
+    }
+  }, [user, fetchAIInsights]);
 
   const getPriorityColor = (priority) => {
     switch (priority) {

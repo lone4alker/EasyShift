@@ -7,7 +7,7 @@ import { supabase } from '@/app/utils/supabase';
 import { useT, formatTime } from '@/app/utils/translations';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 import AIInsights from './components/AIInsights';
-// import OwnerNavbar from '../..                <span className=\"text-sm\">{t('buttons.exportReport')}</span>../../components/ui/OwnerNavbar';
+// import OwnerNavbar from '../..                <span className="text-sm">{t('buttons.exportReport')}</span>../../components/ui/OwnerNavbar';
 
 export default function OwnerDashboard() {
   const { t } = useT();
@@ -24,26 +24,16 @@ export default function OwnerDashboard() {
   const [businessId, setBusinessId] = useState(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user, loadDashboardData]);
-
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
-    
+
     // Try to fetch all business records first to debug
     try {
       const { data: allBusinesses, error: listError } = await supabase
         .from('businesses')
         .select('*')
         .limit(5);
-      
+
       console.log('All businesses (first 5):', allBusinesses);
       console.log('List error:', listError);
     } catch (err) {
@@ -66,7 +56,7 @@ export default function OwnerDashboard() {
       try {
         const { data: businessData, error } = await attempts[i]();
         console.log(`Attempt ${i + 1} result:`, { data: businessData, error });
-        
+
         if (!error && businessData) {
           console.log('Successfully found business data:', businessData);
           setOwnerData(businessData);
@@ -77,7 +67,7 @@ export default function OwnerDashboard() {
         console.log(`Attempt ${i + 1} exception:`, err);
       }
     }
-    
+
     console.log('No business data found for user');
   };
 
@@ -97,18 +87,18 @@ export default function OwnerDashboard() {
       console.log('No user found, skipping dashboard data load');
       return;
     }
-    
+
     try {
       console.log('Loading dashboard data for user:', user.id);
-      
+
       // Step 1: Get all business IDs owned by the current user
       const { data: userBusinesses, error: businessError } = await supabase
         .from('businesses')
         .select('business_id')
         .eq('owner_id', user.id);
-        
+
       console.log('User businesses:', { data: userBusinesses, error: businessError });
-      
+
       if (businessError) {
         console.error('Error fetching businesses:', businessError);
         setStats(prevStats => ({
@@ -119,7 +109,7 @@ export default function OwnerDashboard() {
         }));
         return;
       }
-      
+
       if (!userBusinesses || userBusinesses.length === 0) {
         console.log('No businesses found for user');
         setStats(prevStats => ({
@@ -130,19 +120,19 @@ export default function OwnerDashboard() {
         }));
         return;
       }
-      
+
       // Step 2: Extract business IDs
       const businessIds = userBusinesses.map(b => b.business_id);
       console.log('Business IDs to search for:', businessIds);
-      
+
       // Step 3: Count staff members where business_id is in the user's business IDs
       const { count: totalStaffCount, error: totalStaffError } = await supabase
         .from('staff_members')
         .select('*', { count: 'exact', head: true })
         .in('business_id', businessIds);
-        
+
       console.log('Total staff count:', { count: totalStaffCount, error: totalStaffError });
-      
+
       if (totalStaffError) {
         console.error('Error counting total staff:', totalStaffError);
         setStats(prevStats => ({
@@ -153,23 +143,23 @@ export default function OwnerDashboard() {
         }));
         return;
       }
-      
+
       // Step 4: Count active staff members
       const { count: activeStaffCount, error: activeStaffError } = await supabase
         .from('staff_members')
         .select('*', { count: 'exact', head: true })
         .in('business_id', businessIds)
         .eq('is_active', true);
-        
+
       console.log('Active staff count:', { count: activeStaffCount, error: activeStaffError });
-      
+
       // Step 5: Get sample data for verification
       const { data: sampleStaff, error: sampleError } = await supabase
         .from('staff_members')
         .select('id, first_name, last_name, business_id, is_active')
         .in('business_id', businessIds)
         .limit(5);
-        
+
       console.log('Sample staff data:', { data: sampleStaff, error: sampleError });
 
       const totalStaff = totalStaffCount || 0;
@@ -182,14 +172,14 @@ export default function OwnerDashboard() {
         todaysAttendance: activeStaff
       }));
 
-      console.log('Dashboard stats updated successfully:', { 
-        totalStaff, 
+      console.log('Dashboard stats updated successfully:', {
+        totalStaff,
         activeStaff,
         businessIds,
         userId: user.id,
         sampleData: sampleStaff
       });
-      
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       setStats(prevStats => ({
@@ -200,6 +190,16 @@ export default function OwnerDashboard() {
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user, loadDashboardData]);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -408,14 +408,14 @@ export default function OwnerDashboard() {
                   </svg>
                   <span className="text-sm">{t('navigation.dashboard')}</span>
                 </div>
-                
+
                 <Link href="/owner/staff-management" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <span className="text-sm">{t('navigation.staffManagement')}</span>
                 </Link>
-                
+
                 <Link href="/owner/schedule" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
@@ -438,7 +438,7 @@ export default function OwnerDashboard() {
               <div className="hidden sm:block">
                 <LanguageSwitcher />
               </div>
-              
+
               {/* User Info */}
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <div className="text-right hidden md:block">
