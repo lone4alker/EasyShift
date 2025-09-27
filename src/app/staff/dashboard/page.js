@@ -88,6 +88,10 @@ export default function StaffDashboard() {
   // Device detection state
   const [isMobile, setIsMobile] = useState(false);
 
+  // Check-in status state
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [checkInData, setCheckInData] = useState(null);
+
   // Schedule state
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [shifts, setShifts] = useState([
@@ -238,9 +242,61 @@ export default function StaffDashboard() {
     router.push('/staff/login');
   };
 
-  // Device detection on mount
+  // Check for existing check-in status
+  const checkExistingCheckIn = () => {
+    try {
+      const savedCheckIn = localStorage.getItem('easyshift_checkin_status');
+      if (savedCheckIn) {
+        const checkInInfo = JSON.parse(savedCheckIn);
+        console.log('Found existing check-in:', checkInInfo);
+        
+        // Check if check-in is from today and still valid
+        const checkInDate = new Date(checkInInfo.timestamp);
+        const today = new Date();
+        const isToday = checkInDate.toDateString() === today.toDateString();
+        
+        if (isToday && checkInInfo.status === 'checked_in') {
+          setIsCheckedIn(true);
+          setCheckInData(checkInInfo);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking check-in status:', error);
+    }
+    return false;
+  };
+
+  // Handle check-out
+  const handleCheckOut = () => {
+    try {
+      // Update check-in data to checked out
+      const updatedCheckIn = {
+        ...checkInData,
+        checkOutTimestamp: new Date().toISOString(),
+        status: 'checked_out'
+      };
+      
+      localStorage.setItem('easyshift_checkin_status', JSON.stringify(updatedCheckIn));
+      
+      // Clear check-in state
+      setIsCheckedIn(false);
+      setCheckInData(null);
+      
+      console.log('User checked out successfully');
+      
+      // Here you would normally save to database
+      // For now, we'll just update local state
+      
+    } catch (error) {
+      console.error('Check-out error:', error);
+    }
+  };
+
+  // Device detection and check-in status on mount
   useEffect(() => {
     setIsMobile(isMobileDevice());
+    checkExistingCheckIn();
   }, []);
 
   // Convert IST local (YYYY-MM-DD, HH:MM) to UTC ISO
@@ -418,36 +474,46 @@ export default function StaffDashboard() {
                 <div className={`w-3 h-3 rounded-full ${isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
                 <div className="text-xl sm:text-2xl font-mono font-bold text-slate-800">{elapsed}</div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                {isMobile ? (
-                  // Single QR scan button for mobile devices
+              <div className="flex flex-col gap-2 sm:gap-3">
+                {!isCheckedIn ? (
+                  /* Check In Button */
                   <button 
                     onClick={() => router.push('/staff/qr-scanner')} 
                     className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow flex items-center justify-center space-x-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6v6H9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span>Check In with Camera</span>
                   </button>
                 ) : (
-                  // Regular time-based buttons for desktop devices
-                  !isClockedIn ? (
-                    <button onClick={() => {/* Add regular clock-in logic */}} className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow flex items-center justify-center space-x-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  /* Checked In Status and Check Out Button */
+                  <div className="space-y-2">
+                    {/* Checked In Status */}
+                    <div className="w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center space-x-2">
+                      <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>Clock In</span>
-                    </button>
-                  ) : (
-                    <button onClick={() => {/* Add regular clock-out logic */}} className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold shadow flex items-center justify-center space-x-2">
+                      <span className="text-emerald-800 font-semibold">Checked In</span>
+                      {checkInData && (
+                        <span className="text-emerald-600 text-sm">
+                          {new Date(checkInData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Check Out Button */}
+                    <button 
+                      onClick={handleCheckOut}
+                      className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold shadow flex items-center justify-center space-x-2"
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
-                      <span>Clock Out</span>
+                      <span>Check Out</span>
                     </button>
-                  )
+                  </div>
                 )}
               </div>
             </div>
