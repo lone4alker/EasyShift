@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/app/utils/supabase';
 
@@ -28,7 +28,8 @@ export default function QRScannerPage() {
   const [scanResult, setScanResult] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [isDetecting, setIsDetecting] = useState(false); // For immediate visual feedback
+  const [lastDetectionTime, setLastDetectionTime] = useState(0); // Cooldown to prevent rapid blinking
+  const [cameraInitialized, setCameraInitialized] = useState(false); // Prevent multiple initializations
 
   // Get current user
   useEffect(() => {
@@ -40,10 +41,17 @@ export default function QRScannerPage() {
   }, []);
 
   // Start camera with improved permission handling
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
+    // Prevent multiple initializations
+    if (cameraInitialized || cameraStream) {
+      console.log('Camera already initialized, skipping...');
+      return;
+    }
+    
     try {
       setCameraError(null);
       setIsScanning(true);
+      setCameraInitialized(true);
       
       // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -135,89 +143,87 @@ export default function QRScannerPage() {
       
       setCameraError(errorMessage);
       setIsScanning(false);
+      setCameraInitialized(false);
     }
-  };
+  }, [cameraInitialized, cameraStream]);
 
   // Stop camera
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
     setIsScanning(false);
-  };
+    setCameraInitialized(false);
+  }, [cameraStream]);
 
-  // Real-time QR Code scanning with continuous detection
+  // Stable QR Code scanning with controlled intervals (eliminates blinking)
   const startQRScanning = () => {
     let scanInterval;
-    let animationFrame;
     
     const scanQRCode = () => {
-      if (!videoRef.current || !canvasRef.current || !isScanning || scanResult) return;
-
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-
-      // Ensure video is ready
-      if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-        animationFrame = requestAnimationFrame(scanQRCode);
+      if (!videoRef.current || !canvasRef.current || !isScanning || scanResult) {
         return;
       }
 
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
 
-      // Draw current video frame to canvas for analysis
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Only proceed if video is ready
+      if (video.readyState < video.HAVE_CURRENT_DATA) {
+        return;
+      }
 
-      // Get image data for QR code detection
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Continuously attempt QR detection - no delays
-      detectQRCode(imageData);
-      
-      // Schedule next frame
-      if (isScanning && !scanResult) {
-        animationFrame = requestAnimationFrame(scanQRCode);
+      try {
+        const context = canvas.getContext('2d');
+
+        // Set canvas dimensions only if needed (prevent constant resizing)
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+
+        // Draw current frame
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Get image data for detection
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Detect QR code
+        detectQRCode(imageData);
+      } catch (error) {
+        console.error('QR scanning error:', error);
       }
     };
 
-    // Start scanning immediately when video is ready
-    if (videoRef.current && videoRef.current.readyState >= videoRef.current.HAVE_CURRENT_DATA) {
-      scanQRCode();
-    } else {
-      // Wait for video to be ready, then start scanning
-      const checkVideoReady = () => {
-        if (videoRef.current && videoRef.current.readyState >= videoRef.current.HAVE_CURRENT_DATA) {
-          scanQRCode();
-        } else {
-          setTimeout(checkVideoReady, 100);
-        }
-      };
-      checkVideoReady();
-    }
+    // Use stable interval instead of requestAnimationFrame
+    scanInterval = setInterval(scanQRCode, 2000); // Scan every 2 seconds - very stable
+    
+    // Initial scan after a delay
+    setTimeout(scanQRCode, 1000);
     
     // Cleanup function
     return () => {
-      if (scanInterval) clearInterval(scanInterval);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
+      if (scanInterval) {
+        clearInterval(scanInterval);
+      }
     };
   };
 
-  // Real-time QR code detection with instant response
+  // Real-time QR code detection with instant response (no blinking)
   const detectQRCode = (imageData) => {
-    if (scanResult || !isScanning) return;
+    const now = Date.now();
+    // Prevent multiple rapid detections and add cooldown period
+    if (scanResult || !isScanning || (now - lastDetectionTime < 3000)) return;
     
     // Simulate continuous scanning - detect QR when conditions are met
     // In a real implementation, you would use jsQR library here:
     // const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
     
-    // For demo: simulate finding QR code with very fast detection
+    // For demo: simulate finding QR code with fast but controlled detection
     const detectionChance = Math.random();
     
-    if (detectionChance > 0.85) { // 15% chance per frame = very quick detection
+    if (detectionChance > 0.7) { // 30% chance per scan = stable detection
       const qrTypes = [
         "EASYSHIFT_CHECKIN_STAFF_" + Math.floor(Math.random() * 1000),
         "EASYSHIFT_CHECKIN_LOCATION_MAIN", 
@@ -233,15 +239,19 @@ export default function QRScannerPage() {
         
       console.log('QR Code detected instantly:', randomQR);
       
-      // Immediate visual feedback - show detection state immediately
-      setIsDetecting(true);
-      
-      // Small delay for visual feedback, then process
-      setTimeout(() => {
+      // Only process valid QRs and stop scanning immediately
+      if (isValidQRCode(randomQR)) {
+        console.log('Valid QR Code detected:', randomQR);
+        setLastDetectionTime(now); // Set cooldown
+        
+        // Stop scanning immediately to prevent further blinking
+        setIsScanning(false);
         setScanResult(randomQR);
         handleQRDetected(randomQR);
-        setIsDetecting(false);
-      }, 200); // Very brief visual confirmation
+      } else {
+        // Invalid QR - just continue scanning silently
+        console.log('Invalid QR detected, continuing scan...');
+      }
     }
   };
 
@@ -332,19 +342,24 @@ export default function QRScannerPage() {
     }
   };
 
-  // Initialize camera on component mount (all devices)
+  // Initialize camera once on component mount
   useEffect(() => {
+    let isMounted = true;
+    
     // Small delay to ensure component is fully mounted
     const timer = setTimeout(() => {
-      startCamera();
+      if (isMounted) {
+        startCamera();
+      }
     }, 500);
 
     // Cleanup on unmount
     return () => {
+      isMounted = false;
       clearTimeout(timer);
       stopCamera();
     };
-  }, [startCamera, stopCamera]);
+  }, []); // Empty dependency array - run only once
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -434,28 +449,17 @@ export default function QRScannerPage() {
                   {/* QR Frame with Enhanced Scanning Animation */}
                   <div className="w-64 h-64 relative border-2 border-white border-opacity-70 rounded-lg">
                     {/* Animated corner guides */}
-                    <div className={`absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg transition-colors duration-150 ${isDetecting ? 'border-green-300 animate-ping' : isScanning ? 'border-emerald-400 animate-pulse' : 'border-white'}`}></div>
-                    <div className={`absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg transition-colors duration-150 ${isDetecting ? 'border-green-300 animate-ping' : isScanning ? 'border-emerald-400 animate-pulse' : 'border-white'}`}></div>
-                    <div className={`absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg transition-colors duration-150 ${isDetecting ? 'border-green-300 animate-ping' : isScanning ? 'border-emerald-400 animate-pulse' : 'border-white'}`}></div>
-                    <div className={`absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg transition-colors duration-150 ${isDetecting ? 'border-green-300 animate-ping' : isScanning ? 'border-emerald-400 animate-pulse' : 'border-white'}`}></div>
+                    <div className={`absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg ${isScanning ? 'border-emerald-400' : 'border-white'}`}></div>
+                    <div className={`absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg ${isScanning ? 'border-emerald-400' : 'border-white'}`}></div>
+                    <div className={`absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg ${isScanning ? 'border-emerald-400' : 'border-white'}`}></div>
+                    <div className={`absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg ${isScanning ? 'border-emerald-400' : 'border-white'}`}></div>
                     
-                    {/* Continuous scanning animations */}
+                    {/* Static scanning indicator */}
                     {isScanning && (
-                      <>
-                        {/* Horizontal scanning line */}
-                        <div className="absolute top-0 left-0 w-full h-0.5 bg-emerald-400 animate-bounce"></div>
-                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-400 animate-bounce delay-75"></div>
-                        
-                        {/* Vertical scanning lines */}
-                        <div className="absolute top-0 left-0 w-0.5 h-full bg-emerald-400 animate-ping delay-100"></div>
-                        <div className="absolute top-0 right-0 w-0.5 h-full bg-emerald-400 animate-ping delay-150"></div>
-                        
-                        {/* Center crosshair */}
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                          <div className="w-8 h-0.5 bg-emerald-300 animate-pulse"></div>
-                          <div className="w-0.5 h-8 bg-emerald-300 animate-pulse absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
-                        </div>
-                      </>
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <div className="w-6 h-0.5 bg-emerald-400 opacity-60"></div>
+                        <div className="w-0.5 h-6 bg-emerald-400 opacity-60 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                      </div>
                     )}
                   </div>
                   
@@ -467,9 +471,9 @@ export default function QRScannerPage() {
                     
                     {/* Real-time scanning status */}
                     <div className="flex items-center justify-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full transition-colors duration-150 ${isDetecting ? 'bg-green-300 animate-ping' : isScanning ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`}></div>
+                      <div className={`w-3 h-3 rounded-full ${isScanning ? 'bg-emerald-400' : 'bg-gray-400'}`}></div>
                       <p className="text-white text-sm opacity-80">
-                        {isDetecting ? 'QR Code Detected!' : isScanning ? 'High-speed scanning active' : 'Camera ready'}
+                        {isScanning ? 'Scanning for QR codes...' : 'Camera ready'}
                       </p>
                     </div>
                     
@@ -485,14 +489,14 @@ export default function QRScannerPage() {
                 <div className="flex justify-between items-center">
                   {/* Camera status */}
                   <div className="flex items-center space-x-2 bg-black bg-opacity-50 rounded-full px-3 py-1">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
                     <span className="text-white text-sm">Camera Active</span>
                   </div>
                   
                   {/* Scan status */}
                   {isScanning && (
                     <div className="flex items-center space-x-2 bg-black bg-opacity-50 rounded-full px-3 py-1">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                       <span className="text-white text-sm">Scanning...</span>
                     </div>
                   )}
