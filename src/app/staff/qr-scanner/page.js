@@ -3,6 +3,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/app/utils/supabase';
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { Capacitor } from '@capacitor/core';
+import jsQR from 'jsqr';
 
 // Device detection utilities
 const isAndroidDevice = () => {
@@ -30,15 +33,38 @@ export default function QRScannerPage() {
   const [user, setUser] = useState(null);
   const [lastDetectionTime, setLastDetectionTime] = useState(0); // Cooldown to prevent rapid blinking
   const [cameraInitialized, setCameraInitialized] = useState(false); // Prevent multiple initializations
-  const [scanningStarted, setScanningStarted] = useState(false); // Prevent multiple scanning sessions
+  const [mlkitSupported, setMlkitSupported] = useState(false);
+  const [detectionMethod, setDetectionMethod] = useState('web'); // 'mlkit' or 'web'
+  const [mlkitScanning, setMlkitScanning] = useState(false);
 
-  // Get current user
+  // Get current user and check ML Kit support
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
+    
+    const checkMLKitSupport = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { supported } = await BarcodeScanner.isSupported();
+          setMlkitSupported(supported);
+          if (supported) {
+            setDetectionMethod('mlkit');
+            console.log('✅ ML Kit barcode scanning supported');
+          } else {
+            console.log('❌ ML Kit not supported, using jsQR fallback');
+          }
+        } catch (error) {
+          console.log('❌ ML Kit check failed, using jsQR fallback:', error);
+        }
+      } else {
+        console.log('📱 Web platform detected, using jsQR detection');
+      }
+    };
+    
     getCurrentUser();
+    checkMLKitSupport();
   }, []);
 
   // Start camera with improved permission handling
@@ -117,11 +143,8 @@ export default function QRScannerPage() {
         videoRef.current.srcObject = stream;
         setCameraStream(stream);
         
-        // Start QR code scanning only once
-        if (!scanningStarted) {
-          setScanningStarted(true);
-          videoRef.current.addEventListener('loadedmetadata', startQRScanning, { once: true });
-        }
+        // Start QR code scanning once video is loaded
+        videoRef.current.addEventListener('loadedmetadata', startQRScanning);
         
         console.log('Camera stream initialized successfully');
       } else {
@@ -149,29 +172,28 @@ export default function QRScannerPage() {
       setIsScanning(false);
       setCameraInitialized(false);
     }
-  }, [cameraInitialized, cameraStream, scanningStarted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cameraInitialized, cameraStream]);
 
   // Stop camera
-  const stopCamera = useCallback(() => {
+  const stopCamera = () => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
     setIsScanning(false);
-    setCameraInitialized(false);
-    setScanningStarted(false);
-  }, [cameraStream]);
+  };
 
-  // Stable QR Code scanning with controlled intervals (eliminates blinking)
+  // Enhanced QR scanning with ML Kit + jsQR dual detection
   const startQRScanning = () => {
-    // Prevent multiple scanning sessions
-    if (scanningStarted && isScanning) {
-      console.log('QR scanning already in progress, skipping...');
-      return;
-    }
-    
     let scanInterval;
     
+    // Start ML Kit scanning if supported (native platforms)
+    if (mlkitSupported && detectionMethod === 'mlkit') {
+      console.log('🚀 Starting ML Kit detection...');
+      startMLKitScanning();
+    }
+    
+    // Always run jsQR as backup/web detection
     const scanQRCode = () => {
       if (!videoRef.current || !canvasRef.current || !isScanning || scanResult) {
         return;
@@ -194,24 +216,29 @@ export default function QRScannerPage() {
           canvas.height = video.videoHeight;
         }
 
+        // Clear previous drawings
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
         // Draw current frame
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Get image data for detection
+        // Get image data for jsQR detection
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Detect QR code
+        // Detect QR code using jsQR
         detectQRCode(imageData);
       } catch (error) {
         console.error('QR scanning error:', error);
       }
     };
 
-    // Use stable interval instead of requestAnimationFrame
-    scanInterval = setInterval(scanQRCode, 1000); // Scan every 1 second - more responsive
+    // Use optimized interval for jsQR scanning
+    scanInterval = setInterval(scanQRCode, mlkitSupported ? 1000 : 500); // Slower if ML Kit is also running
     
-    // Initial scan after a short delay
+    // Initial scan after a delay
     setTimeout(scanQRCode, 500);
+    
+    console.log(`📱 Detection active: ${detectionMethod} ${mlkitSupported ? '+ jsQR backup' : 'jsQR only'}`);
     
     // Cleanup function
     return () => {
@@ -221,45 +248,121 @@ export default function QRScannerPage() {
     };
   };
 
-  // Enhanced QR code detection - accepts any QR code
+  // Enhanced QR code detection using ML Kit + jsQR
   const detectQRCode = (imageData) => {
     const now = Date.now();
     // Prevent multiple rapid detections and add cooldown period
-    if (scanResult || !isScanning || (now - lastDetectionTime < 2000)) return;
+    if (scanResult || !isScanning || (now - lastDetectionTime < 1000)) return;
     
-    // Simulate continuous scanning with enhanced detection
-    // In a real implementation, you would use jsQR library here:
-    // const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-    
-    // Enhanced detection - higher success rate for any QR code
-    const detectionChance = Math.random();
-    
-    if (detectionChance > 0.5) { // 50% chance per scan = good detection rate
-      // Generate any type of QR code data - accept everything
-      const qrTypes = [
-        "https://example.com/checkin/" + Date.now(),
-        "QR_CODE_DATA_" + Math.floor(Math.random() * 10000),
-        "CHECKIN_TOKEN_" + Date.now(),
-        "SCAN_SUCCESS_" + Math.floor(Math.random() * 1000),
-        "https://qr-generator.com/sample",
-        "TEXT_QR_" + Math.random().toString(36).substring(7),
-        "WIFI:T:WPA;S:NetworkName;P:password;;",
-        "mailto:test@example.com?subject=Hello"
-      ];
+    try {
+      // Use jsQR for web-based detection
+      const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
       
-      // Always treat as valid - accept any QR code format
-      const randomQR = qrTypes[Math.floor(Math.random() * qrTypes.length)];
+      if (qrCode && qrCode.data) {
+        console.log('📱 jsQR detected:', qrCode.data);
         
-      console.log('QR Code detected:', randomQR);
-      
-      // Accept any QR code - no validation needed
-      setLastDetectionTime(now); // Set cooldown
-      
-      // Stop scanning immediately and process the QR
-      setIsScanning(false);
-      setScanResult(randomQR);
-      handleQRDetected(randomQR);
+        // Draw detection rectangle for visual feedback
+        if (canvasRef.current) {
+          const canvas = canvasRef.current;
+          const context = canvas.getContext('2d');
+          
+          // Draw detection overlay
+          context.strokeStyle = '#10B981'; // Emerald color
+          context.lineWidth = 4;
+          context.beginPath();
+          
+          const { topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner } = qrCode.location;
+          context.moveTo(topLeftCorner.x, topLeftCorner.y);
+          context.lineTo(topRightCorner.x, topRightCorner.y);
+          context.lineTo(bottomRightCorner.x, bottomRightCorner.y);
+          context.lineTo(bottomLeftCorner.x, bottomLeftCorner.y);
+          context.closePath();
+          context.stroke();
+        }
+        
+        // Process detected QR code
+        if (isValidQRCode(qrCode.data)) {
+          console.log('✅ Valid QR Code detected via jsQR:', qrCode.data);
+          setLastDetectionTime(now);
+          setIsScanning(false);
+          setScanResult(qrCode.data);
+          handleQRDetected(qrCode.data);
+        } else {
+          console.log('❌ Invalid QR detected via jsQR, continuing scan...');
+        }
+      }
+    } catch (error) {
+      console.error('jsQR detection error:', error);
     }
+  };
+  
+  // ML Kit native scanning function
+  const startMLKitScanning = async () => {
+    if (!mlkitSupported || mlkitScanning) return;
+    
+    try {
+      setMlkitScanning(true);
+      console.log('🚀 Starting ML Kit scanning...');
+      
+      // Check permissions
+      const { granted } = await BarcodeScanner.checkPermissions();
+      if (!granted) {
+        const { granted: requestGranted } = await BarcodeScanner.requestPermissions();
+        if (!requestGranted) {
+          console.log('❌ ML Kit permission denied');
+          setMlkitScanning(false);
+          return;
+        }
+      }
+      
+      // Configure ML Kit scanning
+      const scanOptions = {
+        formats: ['QR_CODE'], // Focus on QR codes only
+        lensFacing: 'back', // Use back camera
+      };
+      
+      // Start ML Kit scanning
+      const { barcodes } = await BarcodeScanner.scan(scanOptions);
+      
+      if (barcodes && barcodes.length > 0) {
+        // Find the best QR code (largest area)
+        const bestQR = barcodes.reduce((best, current) => {
+          const currentArea = current.cornerPoints ? 
+            calculateBoundingBoxArea(current.cornerPoints) : 0;
+          const bestArea = best.cornerPoints ? 
+            calculateBoundingBoxArea(best.cornerPoints) : 0;
+          
+          return currentArea > bestArea ? current : best;
+        });
+        
+        console.log('🎯 ML Kit detected:', bestQR.rawValue);
+        
+        if (isValidQRCode(bestQR.rawValue)) {
+          console.log('✅ Valid QR Code detected via ML Kit:', bestQR.rawValue);
+          setIsScanning(false);
+          setScanResult(bestQR.rawValue);
+          handleQRDetected(bestQR.rawValue);
+        }
+      }
+    } catch (error) {
+      console.error('ML Kit scanning error:', error);
+      if (error.message && !error.message.includes('cancelled')) {
+        setCameraError('ML Kit scanning failed: ' + error.message);
+      }
+    } finally {
+      setMlkitScanning(false);
+    }
+  };
+  
+  // Helper function to calculate bounding box area
+  const calculateBoundingBoxArea = (cornerPoints) => {
+    if (!cornerPoints || cornerPoints.length < 4) return 0;
+    
+    const width = Math.abs(cornerPoints[1].x - cornerPoints[0].x);
+    const height = Math.abs(cornerPoints[2].y - cornerPoints[0].y);
+    return width * height;
   };
 
   // Validate QR code format
@@ -284,7 +387,7 @@ export default function QRScannerPage() {
     }
   };
 
-  // Handle QR code detection - accepts any QR code
+  // Handle QR code detection
   const handleQRDetected = async (qrData) => {
     if (scanResult) return; // Prevent multiple scans
     
@@ -292,9 +395,21 @@ export default function QRScannerPage() {
     setScanResult(qrData);
     setIsScanning(false);
     
-    // Accept any QR code and process check-in immediately
-    console.log('QR code detected, processing check-in...');
-    await processCheckIn(qrData);
+    // Validate QR code format
+    if (isValidQRCode(qrData)) {
+      console.log('Valid QR code detected, processing check-in...');
+      // Valid QR code - process check-in
+      await processCheckIn(qrData);
+    } else {
+      console.log('Invalid QR code detected');
+      // Invalid QR code
+      setCameraError('Invalid QR code. Please scan a valid EasyShift attendance QR code.');
+      setTimeout(() => {
+        setScanResult(null);
+        setCameraError(null);
+        setIsScanning(true);
+      }, 3000);
+    }
   };
 
   // Process check-in
@@ -354,7 +469,6 @@ export default function QRScannerPage() {
       clearTimeout(timer);
       stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - run only once
 
   return (
@@ -465,16 +579,22 @@ export default function QRScannerPage() {
                       {isScanning ? 'Scanning QR Code...' : 'Position QR code in frame'}
                     </p>
                     
-                    {/* Real-time scanning status */}
+                    {/* Enhanced scanning status with detection method */}
                     <div className="flex items-center justify-center space-x-2">
                       <div className={`w-3 h-3 rounded-full ${isScanning ? 'bg-emerald-400' : 'bg-gray-400'}`}></div>
                       <p className="text-white text-sm opacity-80">
-                        {isScanning ? 'Scanning for QR codes...' : 'Camera ready'}
+                        {isScanning ? 
+                          `${detectionMethod === 'mlkit' ? '🚀 ML Kit' : '📱 jsQR'} scanning...` : 
+                          'Camera ready'
+                        }
                       </p>
                     </div>
                     
                     <p className="text-white text-xs opacity-60">
-                      Auto-scan • Instant response • No manual trigger needed
+                      {mlkitSupported ? 
+                        'ML Kit + jsQR • Enhanced recognition • Auto-detection' :
+                        'jsQR detection • Auto-scan • Instant response'
+                      }
                     </p>
                   </div>
                 </div>
@@ -489,11 +609,13 @@ export default function QRScannerPage() {
                     <span className="text-white text-sm">Camera Active</span>
                   </div>
                   
-                  {/* Scan status */}
+                  {/* Enhanced scan status */}
                   {isScanning && (
                     <div className="flex items-center space-x-2 bg-black bg-opacity-50 rounded-full px-3 py-1">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                      <span className="text-white text-sm">Scanning...</span>
+                      <div className={`w-2 h-2 rounded-full ${mlkitSupported ? 'bg-purple-400' : 'bg-blue-400'}`}></div>
+                      <span className="text-white text-sm">
+                        {mlkitSupported ? 'ML Kit + jsQR' : 'jsQR Scanning'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -506,12 +628,38 @@ export default function QRScannerPage() {
         <div className="bg-white p-4 border-t">
           <div className="text-center space-y-4">
             <div>
-              <h3 className="font-semibold text-slate-800 mb-2">How to scan:</h3>
+              <h3 className="font-semibold text-slate-800 mb-2">
+                Enhanced QR Scanner {mlkitSupported && '🚀'}
+              </h3>
               <div className="text-sm text-slate-600 space-y-1">
                 <p>1. Allow camera permissions when prompted</p>
                 <p>2. Point camera at the QR code</p>
-                <p>3. Make sure code is within the frame</p>
-                <p>4. Hold steady until scan completes</p>
+                <p>3. {mlkitSupported ? 'ML Kit will auto-detect instantly' : 'Hold steady within the frame'}</p>
+                <p>4. {mlkitSupported ? 'No need for perfect alignment' : 'Wait for automatic detection'}</p>
+              </div>
+              
+              {/* Detection method indicator */}
+              <div className="mt-3 p-2 bg-slate-50 rounded-lg">
+                <div className="text-xs text-slate-500 flex items-center justify-center space-x-2">
+                  {mlkitSupported ? (
+                    <>
+                      <span className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span>ML Kit Native</span>
+                      </span>
+                      <span>+</span>
+                      <span className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span>jsQR Backup</span>
+                      </span>
+                    </>
+                  ) : (
+                    <span className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>jsQR Web Detection</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -527,12 +675,30 @@ export default function QRScannerPage() {
               )}
               
               {isScanning && (
-                <button 
-                  onClick={triggerManualScan}
-                  className="btn-responsive px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm"
-                >
-                  Test Scan
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={triggerManualScan}
+                    className="btn-responsive px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm"
+                  >
+                    Test Scan
+                  </button>
+                  
+                  {mlkitSupported && !mlkitScanning && (
+                    <button 
+                      onClick={startMLKitScanning}
+                      className="btn-responsive px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
+                    >
+                      🚀 ML Kit Scan
+                    </button>
+                  )}
+                  
+                  {mlkitScanning && (
+                    <div className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span>ML Kit Active...</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             

@@ -13,6 +13,7 @@
     "cap:serve": "npm run cap:build && npx cap serve"
   },
   "dependencies": {
+    "@capacitor-mlkit/barcode-scanning": "^7.3.0",
     "@capacitor/android": "^7.4.3",
     "@capacitor/camera": "^7.0.2",
     "@capacitor/cli": "^7.4.3",
@@ -23,6 +24,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
+    "jsqr": "^1.4.0",
     "next": "^15.5.4",
     "next-i18next": "^15.4.2",
     "next-intl": "^4.3.9",
@@ -35,6 +37,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5.9.2"
   }
 }
