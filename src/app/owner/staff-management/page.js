@@ -31,12 +31,12 @@ async function saveStaffToDatabase(staffPayload, businessId, userId) {
     user_id: userId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    skills: staffPayload.skills,
-    preferred_shifts: staffPayload.preferredShifts,
-    unavailable_days: staffPayload.unavailableDays,
+    skills: staffPayload.skills ? staffPayload.skills.split(',').map(s => s.trim()).filter(s => s) : [],
+    preferred_shifts: staffPayload.preferredShifts ? staffPayload.preferredShifts.split(',').map(s => s.trim()).filter(s => s) : [],
+    unavailable_days: staffPayload.unavailableDays ? staffPayload.unavailableDays.split(',').map(s => s.trim()).filter(s => s) : [],
     experience_level: staffPayload.experienceLevel,
-    certifications: staffPayload.certifications,
-    location_preferences: staffPayload.locationPreferences,
+    certifications: staffPayload.certifications ? staffPayload.certifications.split(',').map(s => s.trim()).filter(s => s) : [],
+    location_preference: staffPayload.locationPreferences ? staffPayload.locationPreferences.split(',').map(s => s.trim()).filter(s => s) : [],
   }
 
   if (!staffMemberData.first_name || !staffMemberData.email || !staffMemberData.role || !staffMemberData.user_id) {
@@ -188,12 +188,12 @@ export default function StaffManagementPage() {
           createdAt: member.created_at,
           updatedAt: member.updated_at,
           availability: [],
-          skills: member.skills,
-          preferredShifts: member.preferred_shifts,
-          unavailableDays: member.unavailable_days,
-          experienceLevel: member.experience_level,
-          certifications: member.certifications,
-          locationPreferences: member.location_preferences,
+          skills: Array.isArray(member.skills) ? member.skills.join(', ') : (member.skills || ''),
+          preferredShifts: Array.isArray(member.preferred_shifts) ? member.preferred_shifts.join(', ') : (member.preferred_shifts || ''),
+          unavailableDays: Array.isArray(member.unavailable_days) ? member.unavailable_days.join(', ') : (member.unavailable_days || ''),
+          experienceLevel: member.experience_level || '',
+          certifications: Array.isArray(member.certifications) ? member.certifications.join(', ') : (member.certifications || ''),
+          locationPreferences: Array.isArray(member.location_preference) ? member.location_preference.join(', ') : (member.location_preference || ''),
         }));
         setStaff(formattedStaff);
 
@@ -377,12 +377,12 @@ export default function StaffManagementPage() {
         max_hours_per_week: parseInt(newStaffMember.maxHours) || 8,
         role: newStaffMember.role.trim(),
         updated_at: new Date().toISOString(),
-        skills: newStaffMember.skills,
-        preferred_shifts: newStaffMember.preferredShifts,
-        unavailable_days: newStaffMember.unavailableDays,
+        skills: newStaffMember.skills ? newStaffMember.skills.split(',').map(s => s.trim()).filter(s => s) : [],
+        preferred_shifts: newStaffMember.preferredShifts ? newStaffMember.preferredShifts.split(',').map(s => s.trim()).filter(s => s) : [],
+        unavailable_days: newStaffMember.unavailableDays ? newStaffMember.unavailableDays.split(',').map(s => s.trim()).filter(s => s) : [],
         experience_level: newStaffMember.experienceLevel,
-        certifications: newStaffMember.certifications,
-        location_preferences: newStaffMember.locationPreferences,
+        certifications: newStaffMember.certifications ? newStaffMember.certifications.split(',').map(s => s.trim()).filter(s => s) : [],
+        location_preference: newStaffMember.locationPreferences ? newStaffMember.locationPreferences.split(',').map(s => s.trim()).filter(s => s) : [],
       };
       
       const { error: updateError } = await supabase
