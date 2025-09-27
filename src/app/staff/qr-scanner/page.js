@@ -30,6 +30,7 @@ export default function QRScannerPage() {
   const [user, setUser] = useState(null);
   const [lastDetectionTime, setLastDetectionTime] = useState(0); // Cooldown to prevent rapid blinking
   const [cameraInitialized, setCameraInitialized] = useState(false); // Prevent multiple initializations
+  const [scanningStarted, setScanningStarted] = useState(false); // Prevent multiple scanning sessions
 
   // Get current user
   useEffect(() => {
@@ -116,8 +117,11 @@ export default function QRScannerPage() {
         videoRef.current.srcObject = stream;
         setCameraStream(stream);
         
-        // Start QR code scanning once video is loaded
-        videoRef.current.addEventListener('loadedmetadata', startQRScanning);
+        // Start QR code scanning only once
+        if (!scanningStarted) {
+          setScanningStarted(true);
+          videoRef.current.addEventListener('loadedmetadata', startQRScanning, { once: true });
+        }
         
         console.log('Camera stream initialized successfully');
       } else {
@@ -155,10 +159,17 @@ export default function QRScannerPage() {
     }
     setIsScanning(false);
     setCameraInitialized(false);
+    setScanningStarted(false);
   }, [cameraStream]);
 
   // Stable QR Code scanning with controlled intervals (eliminates blinking)
   const startQRScanning = () => {
+    // Prevent multiple scanning sessions
+    if (scanningStarted && isScanning) {
+      console.log('QR scanning already in progress, skipping...');
+      return;
+    }
+    
     let scanInterval;
     
     const scanQRCode = () => {
