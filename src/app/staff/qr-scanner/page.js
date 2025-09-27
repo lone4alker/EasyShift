@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/app/utils/supabase';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
@@ -174,19 +175,19 @@ export default function QRScannerPage() {
       setIsScanning(false);
       setCameraInitialized(false);
     }
-  }, [cameraInitialized, cameraStream]);
+  }, [cameraInitialized, cameraStream, startQRScanning]);
 
   // Stop camera
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
     setIsScanning(false);
-  };
+  }, [cameraStream]);
 
   // Aggressive QR scanning with high frequency detection
-  const startQRScanning = () => {
+  const startQRScanning = useCallback(() => {
     let scanInterval;
     let mlkitInterval;
     
@@ -260,7 +261,7 @@ export default function QRScannerPage() {
         clearInterval(mlkitInterval);
       }
     };
-  };
+  }, [mlkitSupported, detectionMethod, isScanning, scanResult, detectQRCode, startMLKitScanning]);
 
   // Simplified and robust QR detection - detects ANY QR code pattern
   const detectQRCode = async (imageData) => {
@@ -473,7 +474,7 @@ export default function QRScannerPage() {
 
     try {
       // Create image element to load the uploaded file
-      const img = new Image();
+      const img = new window.Image();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -588,7 +589,7 @@ export default function QRScannerPage() {
       clearTimeout(timer);
       stopCamera();
     };
-  }, []); // Empty dependency array - run only once
+  }, [startCamera, stopCamera]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -663,10 +664,12 @@ export default function QRScannerPage() {
                 </p>
                 {uploadedImage && (
                   <div className="mt-4">
-                    <img 
+                    <Image 
                       src={uploadedImage} 
                       alt="Uploaded QR" 
-                      className="w-32 h-32 object-cover rounded-lg border-4 border-white shadow-lg mx-auto"
+                      width={128}
+                      height={128}
+                      className="object-cover rounded-lg border-4 border-white shadow-lg mx-auto"
                     />
                   </div>
                 )}
@@ -774,7 +777,7 @@ export default function QRScannerPage() {
                 <p>• Point camera at <strong>ANY QR code</strong></p>
                 <p>• {mlkitSupported ? 'Auto-detection will find it instantly' : 'Hold steady within the frame'}</p>
                 <p className="pt-2"><strong>OR Upload Image:</strong></p>
-                <p>• Click "📁 Upload QR Image" button</p>
+                <p>• Click &ldquo;📁 Upload QR Image&rdquo; button</p>
                 <p>• Select any image containing a QR code</p>
                 <p>• Automatic processing and redirect!</p>
               </div>
