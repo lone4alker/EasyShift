@@ -149,7 +149,7 @@ export default function QRScannerPage() {
       setIsScanning(false);
       setCameraInitialized(false);
     }
-  }, [cameraInitialized, cameraStream, scanningStarted]);
+  }, [cameraInitialized, cameraStream, scanningStarted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -208,10 +208,10 @@ export default function QRScannerPage() {
     };
 
     // Use stable interval instead of requestAnimationFrame
-    scanInterval = setInterval(scanQRCode, 2000); // Scan every 2 seconds - very stable
+    scanInterval = setInterval(scanQRCode, 1000); // Scan every 1 second - more responsive
     
-    // Initial scan after a delay
-    setTimeout(scanQRCode, 1000);
+    // Initial scan after a short delay
+    setTimeout(scanQRCode, 500);
     
     // Cleanup function
     return () => {
@@ -221,48 +221,44 @@ export default function QRScannerPage() {
     };
   };
 
-  // Real-time QR code detection with instant response (no blinking)
+  // Enhanced QR code detection - accepts any QR code
   const detectQRCode = (imageData) => {
     const now = Date.now();
     // Prevent multiple rapid detections and add cooldown period
-    if (scanResult || !isScanning || (now - lastDetectionTime < 3000)) return;
+    if (scanResult || !isScanning || (now - lastDetectionTime < 2000)) return;
     
-    // Simulate continuous scanning - detect QR when conditions are met
+    // Simulate continuous scanning with enhanced detection
     // In a real implementation, you would use jsQR library here:
     // const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
     
-    // For demo: simulate finding QR code with fast but controlled detection
+    // Enhanced detection - higher success rate for any QR code
     const detectionChance = Math.random();
     
-    if (detectionChance > 0.7) { // 30% chance per scan = stable detection
+    if (detectionChance > 0.5) { // 50% chance per scan = good detection rate
+      // Generate any type of QR code data - accept everything
       const qrTypes = [
-        "EASYSHIFT_CHECKIN_STAFF_" + Math.floor(Math.random() * 1000),
-        "EASYSHIFT_CHECKIN_LOCATION_MAIN", 
-        "EASYSHIFT_CHECKIN_TERMINAL_" + Date.now(),
-        "EASYSHIFT_STAFF_ID_" + Math.floor(Math.random() * 999),
-        "INVALID_QR_" + Math.random()
+        "https://example.com/checkin/" + Date.now(),
+        "QR_CODE_DATA_" + Math.floor(Math.random() * 10000),
+        "CHECKIN_TOKEN_" + Date.now(),
+        "SCAN_SUCCESS_" + Math.floor(Math.random() * 1000),
+        "https://qr-generator.com/sample",
+        "TEXT_QR_" + Math.random().toString(36).substring(7),
+        "WIFI:T:WPA;S:NetworkName;P:password;;",
+        "mailto:test@example.com?subject=Hello"
       ];
       
-      // 92% chance of valid QR for better user experience
-      const randomQR = Math.random() < 0.92 ? 
-        qrTypes[Math.floor(Math.random() * 4)] : // Valid QRs
-        qrTypes[4]; // Invalid QR
+      // Always treat as valid - accept any QR code format
+      const randomQR = qrTypes[Math.floor(Math.random() * qrTypes.length)];
         
-      console.log('QR Code detected instantly:', randomQR);
+      console.log('QR Code detected:', randomQR);
       
-      // Only process valid QRs and stop scanning immediately
-      if (isValidQRCode(randomQR)) {
-        console.log('Valid QR Code detected:', randomQR);
-        setLastDetectionTime(now); // Set cooldown
-        
-        // Stop scanning immediately to prevent further blinking
-        setIsScanning(false);
-        setScanResult(randomQR);
-        handleQRDetected(randomQR);
-      } else {
-        // Invalid QR - just continue scanning silently
-        console.log('Invalid QR detected, continuing scan...');
-      }
+      // Accept any QR code - no validation needed
+      setLastDetectionTime(now); // Set cooldown
+      
+      // Stop scanning immediately and process the QR
+      setIsScanning(false);
+      setScanResult(randomQR);
+      handleQRDetected(randomQR);
     }
   };
 
@@ -288,7 +284,7 @@ export default function QRScannerPage() {
     }
   };
 
-  // Handle QR code detection
+  // Handle QR code detection - accepts any QR code
   const handleQRDetected = async (qrData) => {
     if (scanResult) return; // Prevent multiple scans
     
@@ -296,21 +292,9 @@ export default function QRScannerPage() {
     setScanResult(qrData);
     setIsScanning(false);
     
-    // Validate QR code format
-    if (isValidQRCode(qrData)) {
-      console.log('Valid QR code detected, processing check-in...');
-      // Valid QR code - process check-in
-      await processCheckIn(qrData);
-    } else {
-      console.log('Invalid QR code detected');
-      // Invalid QR code
-      setCameraError('Invalid QR code. Please scan a valid EasyShift attendance QR code.');
-      setTimeout(() => {
-        setScanResult(null);
-        setCameraError(null);
-        setIsScanning(true);
-      }, 3000);
-    }
+    // Accept any QR code and process check-in immediately
+    console.log('QR code detected, processing check-in...');
+    await processCheckIn(qrData);
   };
 
   // Process check-in

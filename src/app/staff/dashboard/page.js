@@ -91,6 +91,7 @@ export default function StaffDashboard() {
   // Check-in status state
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInData, setCheckInData] = useState(null);
+  const [showCheckInSuccess, setShowCheckInSuccess] = useState(false);
 
   // Schedule state
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
@@ -297,6 +298,18 @@ export default function StaffDashboard() {
   useEffect(() => {
     setIsMobile(isMobileDevice());
     checkExistingCheckIn();
+    
+    // Check if redirected from QR scanner with success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('checkedIn') === 'true') {
+      setShowCheckInSuccess(true);
+      // Clear the URL parameter
+      window.history.replaceState({}, '', window.location.pathname);
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        setShowCheckInSuccess(false);
+      }, 5000);
+    }
   }, []);
 
   // Convert IST local (YYYY-MM-DD, HH:MM) to UTC ISO
@@ -461,6 +474,40 @@ export default function StaffDashboard() {
           </>
         )}
       </header>
+
+      {/* QR Check-In Success Message */}
+      {showCheckInSuccess && (
+        <div className="container mx-auto px-3 sm:px-6 pt-4">
+          <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-emerald-800">
+                  ✅ Successfully Checked In!
+                </h3>
+                <div className="mt-1 text-sm text-emerald-700">
+                  QR code detected and attendance recorded. You&apos;re now checked in for your shift.
+                </div>
+              </div>
+              <div className="ml-auto">
+                <button
+                  onClick={() => setShowCheckInSuccess(false)}
+                  className="text-emerald-500 hover:text-emerald-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Hero row: Time Clock + Quick Stats */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
