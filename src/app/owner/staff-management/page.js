@@ -691,10 +691,10 @@ export default function StaffManagementPage() {
             <button onClick={closeModal} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="text-2xl font-bold text-slate-800 mb-4">
+            <h3 className="text-2xl font-bold text-slate-900 mb-4">
               {isEditMode ? t('staffManagement.modal.editTitle') : t('staffManagement.modal.addTitle')}
             </h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <p className="text-sm text-slate-600 mb-6">
               {isEditMode 
                 ? t('staffManagement.modal.editDescription') 
                 : t('staffManagement.modal.addDescription')}
@@ -703,14 +703,14 @@ export default function StaffManagementPage() {
             <form onSubmit={e => e.preventDefault()} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.fullName')}</label>
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.fullName')}</label>
                 <input
                   type="text"
                   name="fullName"
                   id="fullName"
                   value={newStaffMember.fullName}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   placeholder="Jane Doe"
                   required
                 />
@@ -718,14 +718,14 @@ export default function StaffManagementPage() {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.email')}</label>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.email')}</label>
                 <input
                   type="email"
                   name="email"
                   id="email"
                   value={newStaffMember.email}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   placeholder="jane.doe@example.com"
                   required
                 />
@@ -733,28 +733,28 @@ export default function StaffManagementPage() {
 
               {/* Phone Number */}
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.phoneNumber')}</label>
+                <label htmlFor="phone" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.phoneNumber')}</label>
                 <input
                   type="tel"
                   name="phone"
                   id="phone"
                   value={newStaffMember.phone}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   placeholder="(123) 456-7890"
                 />
               </div>
 
               {/* Hourly Rate */}
               <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.hourlyRate')}</label>
+                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.hourlyRate')}</label>
                 <input
                   type="number"
                   name="hourlyRate"
                   id="hourlyRate"
                   value={newStaffMember.hourlyRate}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   min="0"
                   step="0.01"
                 />
@@ -762,14 +762,14 @@ export default function StaffManagementPage() {
 
               {/* Max Hours Per Week */}
               <div>
-                <label htmlFor="maxHours" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.maxHoursWeek')}</label>
+                <label htmlFor="maxHours" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.maxHoursWeek')}</label>
                 <input
                   type="number"
                   name="maxHours"
                   id="maxHours"
                   value={newStaffMember.maxHours}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   min="1"
                   max="168"
                 />
@@ -777,14 +777,14 @@ export default function StaffManagementPage() {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-slate-900">Password</label>
                 <input
                   type="password"
                   name="password"
                   id="password"
                   value={newStaffMember.password}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   placeholder="••••••••"
                   required={!isEditMode} // Password is only required for new staff
                 />
@@ -792,14 +792,14 @@ export default function StaffManagementPage() {
 
               {/* Role */}
               <div className="md:col-span-2">
-                <label htmlFor="role" className="block text-sm font-medium text-slate-700">{t('staffManagement.modal.role')}</label>
+                <label htmlFor="role" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.role')}</label>
                 <input
                   type="text"
                   name="role"
                   id="role"
                   value={newStaffMember.role}
                   onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
                   placeholder="e.g., Stylist, Server, Manager"
                   required
                 />
@@ -807,8 +807,8 @@ export default function StaffManagementPage() {
 
               {/* Availability Section */}
               <div className="md:col-span-2">
-                <h4 className="text-sm font-medium text-slate-700">Availability (Optional)</h4>
-                <p className="text-xs text-slate-500 mb-3">Select the days this staff member is available to work.</p>
+                <h4 className="text-sm font-medium text-slate-900">Availability (Optional)</h4>
+                <p className="text-xs text-slate-700 mb-3">Select the days this staff member is available to work.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                   {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                     <div key={day} className="flex items-center">
@@ -821,7 +821,7 @@ export default function StaffManagementPage() {
                         onChange={handleNewStaffDayChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
                       />
-                      <label htmlFor={day} className="ml-2 block text-sm text-slate-700">{day.substring(0, 3)}</label>
+                      <label htmlFor={day} className="ml-2 block text-sm text-slate-900">{day.substring(0, 3)}</label>
                     </div>
                   ))}
                 </div>
