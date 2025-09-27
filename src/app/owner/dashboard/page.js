@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
 import { useT, formatTime } from '@/app/utils/translations';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
+import AIInsights from './components/AIInsights';
 // import OwnerNavbar from '../..                <span className="text-sm">{t('buttons.exportReport')}</span>../../components/ui/OwnerNavbar';
 
 export default function OwnerDashboard() {
@@ -22,8 +23,6 @@ export default function OwnerDashboard() {
   });
   const [businessId, setBusinessId] = useState(null);
   const router = useRouter();
-
-  // --- Functions defined before useEffects to resolve the initialization error ---
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
@@ -72,7 +71,18 @@ export default function OwnerDashboard() {
     console.log('No business data found for user');
   };
 
-  const loadDashboardData = async () => {
+  const checkAuth = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/owner/login');
+    } else {
+      setUser(user);
+      await fetchOwnerData(user);
+    }
+    setLoading(false);
+  }, [router]);
+
+  const loadDashboardData = useCallback(async () => {
     if (!user) {
       console.log('No user found, skipping dashboard data load');
       return;
@@ -179,35 +189,17 @@ export default function OwnerDashboard() {
         todaysAttendance: 0
       }));
     }
-  };
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/owner/login');
-    } else {
-      setUser(user);
-      // NOTE: We call fetchOwnerData here as it's part of the authentication flow.
-      await fetchOwnerData(user);
-    }
-    setLoading(false);
-  };
-
-  // --- useEffects now use the defined functions ---
+  }, [user]);
 
   useEffect(() => {
     checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount for initial auth check
+  }, [checkAuth]);
 
   useEffect(() => {
     if (user) {
-      // loadDashboardData is defined as a const, so linting would prefer it in the dependencies.
-      // However, its internal logic depends on the 'user' state, so only 'user' is the key trigger.
       loadDashboardData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, loadDashboardData]);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -215,16 +207,6 @@ export default function OwnerDashboard() {
       router.push('/owner/login');
     }
   };
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
 
   // Export: fetch data -> backend AI -> generate PDF
   const handleExportReport = async () => {
@@ -640,53 +622,8 @@ export default function OwnerDashboard() {
               </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">{tDashboard('recentActivity.title')}</h2>
-                <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium">{t('buttons.viewAll')}</button>
-              </div>
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.newStaffAdded')}</p>
-                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.staffJoined', { name: 'John Doe', position: 'cashier' })}</p>
-                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 2 })}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.perfectAttendance')}</p>
-                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.allStaffCheckedIn')}</p>
-                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.hoursAgo', { count: 4 })}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 hover:bg-slate-50 rounded-lg transition-colors">
-                  <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-slate-900">{tDashboard('recentActivity.monthlyReport')}</p>
-                    <p className="text-xs text-slate-500 mt-1">{tDashboard('recentActivity.revenueUp', { percentage: 15 })}</p>
-                    <p className="text-xs text-slate-400 mt-1">{tDashboard('recentActivity.timeAgo.yesterday')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* AI Insights */}
+            <AIInsights user={user} />
           </div>
 
           {/* Performance Overview */}

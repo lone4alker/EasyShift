@@ -414,8 +414,8 @@ export default function StaffDashboard() {
 
 // --- Small UI Helpers ---
 function MiniMonthCalendar({ shifts }) {
-  const today = new Date();
   const days = useMemo(() => {
+    const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const d = [];
@@ -423,7 +423,7 @@ function MiniMonthCalendar({ shifts }) {
       d.push(new Date(current));
     }
     return d;
-  }, [today]);
+  }, []);
 
   const shiftDates = useMemo(() => new Set(shifts.map((s) => new Date(s.date.getFullYear(), s.date.getMonth(), s.date.getDate()).toDateString())), [shifts]);
   const todayKey = useMemo(() => new Date().toDateString(), []);

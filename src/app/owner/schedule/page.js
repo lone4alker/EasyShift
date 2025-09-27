@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
+import { useT } from '@/app/utils/translations';
+import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
+import ScheduleAIInsights from './components/ScheduleAIInsights';
 
 export default function ScheduleDashboardPage() {
   const [user, setUser] = useState(null);
@@ -27,10 +30,7 @@ export default function ScheduleDashboardPage() {
 
   // State for handling request updates
   const [updatingRequestId, setUpdatingRequestId] = useState(null);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const t = useT();
 
   /**
    * Fetches data from staff_members and time_off_requests tables based on your schema
@@ -164,7 +164,7 @@ export default function ScheduleDashboardPage() {
     }
   };
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/owner/login');
@@ -173,139 +173,11 @@ export default function ScheduleDashboardPage() {
       await fetchOwnerData(user); 
     }
     setLoading(false);
-  };
+  }, [router]);
 
-  /**
-   * Handle approving or rejecting a time off request
-   * FIX: Removed manual update of 'updated_at' to resolve schema cache error. Database trigger should handle this.
-   */
-  const updateRequestStatus = async (requestId, newStatus) => {
-    setUpdatingRequestId(requestId);
-    
-    try {
-      console.log(`Updating request ${requestId} to status: ${newStatus}`);
-      
-      const { data, error } = await supabase
-        .from('time_off_requests')
-        .update({ 
-          status: newStatus,
-          // updated_at: new Date().toISOString() // <-- REMOVED THIS LINE
-        })
-        .eq('request_id', requestId)
-        .select();
-
-      if (error) {
-        console.error('Error updating request status:', error);
-        
-        // --- FIX START ---
-        // Safely extract error message or use a fallback for RLS issues
-        const errorMessage = error.message 
-          ? error.message 
-          : 'Unknown database error (likely RLS violation). Check Supabase policies.';
-          
-        alert(`Error updating request: ${errorMessage}`);
-        // --- FIX END ---
-        
-        return;
-      }
-
-      console.log('Successfully updated request:', data);
-
-      // Update local state to reflect the change
-      const updatedShifts = scheduleShifts.map(shift => 
-        shift.id === requestId 
-          ? { ...shift, status: newStatus }
-          : shift
-      );
-      
-      setScheduleShifts(updatedShifts);
-
-      // Update the pending approval count using the new array
-      const pending = updatedShifts.filter(s => s.status?.toLowerCase() === 'pending').length;
-      
-      setScheduleData(prev => ({
-        ...prev,
-        pendingApproval: pending
-      }));
-
-      // Show success message (you can replace with toast notification)
-      alert(`Request ${newStatus} successfully!`);
-
-    } catch (error) {
-      console.error('Unexpected error updating request:', error);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setUpdatingRequestId(null);
-    }
-  };
-
-  /**
-   * Handle bulk approval of all pending requests
-   * FIX: Removed manual update of 'updated_at' to resolve schema cache error. Database trigger should handle this.
-   */
-  const approveAllPendingRequests = async () => {
-    const pendingRequests = scheduleShifts.filter(shift => shift.status?.toLowerCase() === 'pending');
-    
-    if (pendingRequests.length === 0) {
-      alert('No pending requests to approve.');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to approve all ${pendingRequests.length} pending requests?`)) {
-      return;
-    }
-
-    setUpdatingRequestId('bulk');
-    
-    try {
-      const requestIds = pendingRequests.map(request => request.id);
-      
-      const { data, error } = await supabase
-        .from('time_off_requests')
-        .update({ 
-          status: 'approved',
-          // updated_at: new Date().toISOString() // <-- REMOVED THIS LINE
-        })
-        .in('request_id', requestIds)
-        .select();
-
-      if (error) {
-        console.error('Error bulk approving requests:', error);
-        
-        // Safely extract error message or use a fallback
-        const errorMessage = error.message 
-          ? error.message 
-          : 'Unknown database error (likely RLS violation). Check Supabase policies.';
-        
-        alert(`Error approving requests: ${errorMessage}`);
-        return;
-      }
-
-      console.log('Successfully approved all requests:', data);
-
-      // Update local state
-      const updatedShifts = scheduleShifts.map(shift => 
-        requestIds.includes(shift.id)
-          ? { ...shift, status: 'approved' }
-          : shift
-      );
-
-      setScheduleShifts(updatedShifts);
-
-      setScheduleData(prev => ({
-        ...prev,
-        pendingApproval: 0
-      }));
-
-      alert(`Successfully approved ${pendingRequests.length} requests!`);
-
-    } catch (error) {
-      console.error('Unexpected error bulk approving requests:', error);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setUpdatingRequestId(null);
-    }
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -346,6 +218,55 @@ export default function ScheduleDashboardPage() {
       });
     } catch (e) {
       return 'N/A';
+    }
+  };
+
+  const updateRequestStatus = async (requestId, status) => {
+    setUpdatingRequestId(requestId);
+    try {
+      const { error } = await supabase
+        .from('time_off_requests')
+        .update({ status })
+        .eq('request_id', requestId);
+
+      if (error) throw error;
+
+      // Update local state
+      setScheduleShifts(prev => 
+        prev.map(shift => 
+          shift.id === requestId 
+            ? { ...shift, status }
+            : shift
+        )
+      );
+
+      // Update pending count
+      setScheduleData(prev => ({
+        ...prev,
+        pendingApproval: status === 'approved' || status === 'rejected' 
+          ? prev.pendingApproval - 1 
+          : prev.pendingApproval
+      }));
+
+    } catch (error) {
+      console.error('Error updating request status:', error);
+    } finally {
+      setUpdatingRequestId(null);
+    }
+  };
+
+  const approveAllPendingRequests = async () => {
+    setUpdatingRequestId('bulk');
+    try {
+      const pendingRequests = scheduleShifts.filter(shift => shift.status?.toLowerCase() === 'pending');
+      
+      for (const request of pendingRequests) {
+        await updateRequestStatus(request.id, 'approved');
+      }
+    } catch (error) {
+      console.error('Error approving all requests:', error);
+    } finally {
+      setUpdatingRequestId(null);
     }
   };
 
@@ -634,49 +555,17 @@ export default function ScheduleDashboardPage() {
         );
 
       case 'AI Insights':
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">AI Recommendations</h3>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                3 insights available
-              </span>
-            </div>
-            <div className="space-y-4">
-              <div className="p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-blue-100">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-blue-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-800">Staffing Optimization</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 ml-2">
-                        high priority
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-4">Consider adding 2 extra staff members for Saturday peak hours (12-4 PM) to improve customer service and reduce wait times</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">September 26, 2025</span>
-                  <div className="flex space-x-2">
-                    <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                      Apply Suggestion
-                    </button>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
-                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-semibold text-slate-800">
+          AI Recommendations {/* Replace with static text */}
+        </h3>
+      </div>
+      {/* Dynamic AI Insights Component */}
+      <ScheduleAIInsights user={user} />
+    </div>
+  );
 
       default:
         return null;
