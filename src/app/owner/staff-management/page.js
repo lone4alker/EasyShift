@@ -9,21 +9,11 @@ import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 
 // --- Supabase API Functions ---
 
-/**
- * Saves a new staff member and their availability to the Supabase database.
- * NOTE: This function is no longer called directly from the UI.
- * The logic has been moved and integrated into the handleAddStaff function to first
- * create a user account via Supabase Auth.
- * @param {Object} staffPayload - Data from the front-end form.
- * @param {string} businessId - The ID of the owner's business.
- * @param {string} userId - The unique ID of the newly created Supabase Auth user.
- */
 async function saveStaffToDatabase(staffPayload, businessId, userId) {
   if (!businessId || !userId) {
     throw new Error("Business ID and User ID are required to save staff.");
   }
 
-  // 1. Insert the new staff member into the 'staff_members' table with the role name.
   const nameParts = staffPayload.name.trim().split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -35,15 +25,20 @@ async function saveStaffToDatabase(staffPayload, businessId, userId) {
     phone_number: staffPayload.phoneNumber || null,
     hourly_rate: parseFloat(staffPayload.hourlyRate) || 0,
     max_hours_per_week: parseInt(staffPayload.maxHours) || 8,
-    business_id: businessId, // Use the fetched businessId from businesses table
+    business_id: businessId,
     is_active: true,
-    role: staffPayload.roleName.trim(), // Save the role name directly in the 'role' column
-    user_id: userId, // Link to the new Supabase Auth user
+    role: staffPayload.roleName.trim(),
+    user_id: userId,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    skills: staffPayload.skills,
+    preferred_shifts: staffPayload.preferredShifts,
+    unavailable_days: staffPayload.unavailableDays,
+    experience_level: staffPayload.experienceLevel,
+    certifications: staffPayload.certifications,
+    location_preferences: staffPayload.locationPreferences,
   }
 
-  // Validate required fields
   if (!staffMemberData.first_name || !staffMemberData.email || !staffMemberData.role || !staffMemberData.user_id) {
     throw new Error('First name, email, role, and user ID are required fields.');
   }
@@ -65,15 +60,10 @@ async function saveStaffToDatabase(staffPayload, businessId, userId) {
     throw new Error('Failed to create staff member - no data returned.');
   }
 
-  // 2. Get the staff ID from the inserted record
   const staffId = newStaff[0].staff_id
 
-  // Note: Availability is stored in the form but not persisted to a separate table
-  // If you need to store availability, you can add it as a JSONB field to staff_members table
-
-  // Return the newly created staff member object
   return {
-    id: staffId, // This is now correctly using staff_id from the inserted record
+    id: staffId,
     name: staffPayload.name,
     role: staffPayload.roleName,
     email: staffPayload.email,
@@ -81,6 +71,12 @@ async function saveStaffToDatabase(staffPayload, businessId, userId) {
     hourlyRate: staffPayload.hourlyRate,
     maxHours: staffPayload.maxHours,
     availability: staffPayload.availability,
+    skills: staffPayload.skills,
+    preferredShifts: staffPayload.preferredShifts,
+    unavailableDays: staffPayload.unavailableDays,
+    experienceLevel: staffPayload.experienceLevel,
+    certifications: staffPayload.certifications,
+    locationPreferences: staffPayload.locationPreferences,
   }
 }
 
@@ -105,17 +101,22 @@ export default function StaffManagementPage() {
     hourlyRate: 0,
     maxHours: 8,
     availability: [],
-    password: '', // ADDED: New password field
+    password: '',
+    skills: '',
+    preferredShifts: '',
+    unavailableDays: '',
+    experienceLevel: '',
+    certifications: '',
+    locationPreferences: '',
   })
+  const [currentStep, setCurrentStep] = useState(1);
 
-  // COMBINED useEffect to fetch business_id and then staff data
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       setAuthError(null);
       
       try {
-        // 1. Get the authenticated user session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -128,7 +129,6 @@ export default function StaffManagementPage() {
         if (!session?.user) {
           console.error("No user session found.");
           setAuthError('You must be logged in to access this page.');
-          // Redirect to login page after a short delay
           setTimeout(() => {
             router.push('/owner/login');
           }, 2000);
@@ -138,7 +138,6 @@ export default function StaffManagementPage() {
         
         const user = session.user;
 
-        // 2. Fetch the business ID for the user using owner_email
         const { data: businessData, error: businessError } = await supabase
           .from('businesses')
           .select('business_id, shop_name')
@@ -165,7 +164,6 @@ export default function StaffManagementPage() {
         const fetchedBusinessId = businessData.business_id;
         setBusinessId(fetchedBusinessId);
 
-        // 3. Use the fetched business ID to get staff data from staff_members table only
         const { data: staffData, error: staffError } = await supabase
           .from('staff_members')
           .select('*')
@@ -179,7 +177,7 @@ export default function StaffManagementPage() {
         }
         
         const formattedStaff = (staffData || []).map(member => ({
-          id: member.staff_id, // Use staff_id as primary key
+          id: member.staff_id,
           name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
           role: member.role || 'No Role',
           email: member.email || '',
@@ -189,7 +187,13 @@ export default function StaffManagementPage() {
           isActive: member.is_active,
           createdAt: member.created_at,
           updatedAt: member.updated_at,
-          availability: [], // Initialize empty availability array since we're not joining with staff_availability
+          availability: [],
+          skills: member.skills,
+          preferredShifts: member.preferred_shifts,
+          unavailableDays: member.unavailable_days,
+          experienceLevel: member.experience_level,
+          certifications: member.certifications,
+          locationPreferences: member.location_preferences,
         }));
         setStaff(formattedStaff);
 
@@ -202,14 +206,14 @@ export default function StaffManagementPage() {
     }
 
     fetchData();
-  }, [router]); // Include router in dependencies
-  // The state change for businessId no longer needs to trigger a second fetch
+  }, [router]);
 
   const openModal = () => setIsModalOpen(true)
   const closeModal = () => {
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditingStaff(null);
+    setCurrentStep(1); // Reset to first step
     setNewStaffMember({
       fullName: '',
       role: '',
@@ -218,7 +222,13 @@ export default function StaffManagementPage() {
       hourlyRate: 0,
       maxHours: 8,
       availability: [],
-      password: '', // ADDED: Clear password field on close
+      password: '',
+      skills: '',
+      preferredShifts: '',
+      unavailableDays: '',
+      experienceLevel: '',
+      certifications: '',
+      locationPreferences: '',
     });
   }
 
@@ -240,50 +250,35 @@ export default function StaffManagementPage() {
     })
   }
 
-  const validateStaffForm = () => {
+  const validateStep1 = () => {
     const errors = [];
-    
-    if (!newStaffMember.fullName?.trim()) {
-      errors.push('Full Name is required');
-    }
-    
-    if (!newStaffMember.role?.trim()) {
-      errors.push('Role is required');
-    }
-    
+    if (!newStaffMember.fullName?.trim()) errors.push('Full Name is required');
+    if (!newStaffMember.role?.trim()) errors.push('Role is required');
     if (!newStaffMember.email?.trim()) {
       errors.push('Email is required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStaffMember.email.trim())) {
       errors.push('Please enter a valid email address');
     }
-    
-    if (newStaffMember.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(newStaffMember.phone.replace(/[\s\-\(\)]/g, ''))) {
-      errors.push('Please enter a valid phone number');
+    if (!isEditMode && (!newStaffMember.password || newStaffMember.password.length < 6)) {
+      errors.push('Password must be at least 6 characters long.');
     }
-    
-    if (newStaffMember.hourlyRate < 0) {
-      errors.push('Hourly rate cannot be negative');
-    }
-    
-    if (newStaffMember.maxHours <= 0 || newStaffMember.maxHours > 168) {
-      errors.push('Max hours per week must be between 1 and 168');
-    }
-    
     return errors;
   };
 
-  const handleAddStaff = async () => {
-    const validationErrors = validateStaffForm();
-    
-    if (!newStaffMember.password || newStaffMember.password.length < 6) {
-      validationErrors.push('Password must be at least 6 characters long.');
-    }
-
-    if (validationErrors.length > 0) {
-      alert('Please fix the following errors:\n' + validationErrors.join('\n'));
+  const handleNextStep = () => {
+    const errors = validateStep1();
+    if (errors.length > 0) {
+      alert('Please fix the following errors:\n' + errors.join('\n'));
       return;
     }
-    
+    setCurrentStep(currentStep + 1);
+  };
+  
+  const handlePreviousStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const handleAddStaff = async () => {
     if (!businessId) {
       alert('Could not determine business ID. Please try logging in again.');
       return;
@@ -292,7 +287,6 @@ export default function StaffManagementPage() {
     setIsSaving(true);
 
     try {
-      // Step 1: Create the user in Supabase Auth
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: newStaffMember.email,
         password: newStaffMember.password,
@@ -309,8 +303,6 @@ export default function StaffManagementPage() {
         throw new Error('User was not created by Supabase Auth.');
       }
 
-      // Step 2: Save the staff member to your database table,
-      // linking it to the new user's ID.
       const staffPayload = {
         name: newStaffMember.fullName,
         roleName: newStaffMember.role,
@@ -319,6 +311,12 @@ export default function StaffManagementPage() {
         hourlyRate: parseFloat(newStaffMember.hourlyRate),
         maxHours: parseInt(newStaffMember.maxHours),
         availability: newStaffMember.availability,
+        skills: newStaffMember.skills,
+        preferredShifts: newStaffMember.preferredShifts,
+        unavailableDays: newStaffMember.unavailableDays,
+        experienceLevel: newStaffMember.experienceLevel,
+        certifications: newStaffMember.certifications,
+        locationPreferences: newStaffMember.locationPreferences,
       }
 
       const addedStaff = await saveStaffToDatabase(staffPayload, businessId, user.id);
@@ -345,14 +343,19 @@ export default function StaffManagementPage() {
       hourlyRate: member.hourlyRate,
       maxHours: member.maxHours,
       availability: member.availability || [],
-      password: '', // EDIT: Password should not be pre-filled
+      password: '',
+      skills: member.skills || '',
+      preferredShifts: member.preferredShifts || '',
+      unavailableDays: member.unavailableDays || '',
+      experienceLevel: member.experienceLevel || '',
+      certifications: member.certifications || '',
+      locationPreferences: member.locationPreferences || '',
     });
     setIsModalOpen(true);
   };
 
   const handleUpdateStaff = async () => {
-    const validationErrors = validateStaffForm();
-    
+    const validationErrors = validateStep1();
     if (validationErrors.length > 0) {
       alert('Please fix the following errors:\n' + validationErrors.join('\n'));
       return;
@@ -373,7 +376,13 @@ export default function StaffManagementPage() {
         hourly_rate: parseFloat(newStaffMember.hourlyRate) || 0,
         max_hours_per_week: parseInt(newStaffMember.maxHours) || 8,
         role: newStaffMember.role.trim(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        skills: newStaffMember.skills,
+        preferred_shifts: newStaffMember.preferredShifts,
+        unavailable_days: newStaffMember.unavailableDays,
+        experience_level: newStaffMember.experienceLevel,
+        certifications: newStaffMember.certifications,
+        location_preferences: newStaffMember.locationPreferences,
       };
       
       const { error: updateError } = await supabase
@@ -385,10 +394,6 @@ export default function StaffManagementPage() {
         throw new Error(`Failed to update staff member: ${updateError.message}`);
       }
       
-      // Note: Availability updates would go here if stored in a separate table or JSONB field
-      // Currently availability is only stored in the form state
-      
-      // Update local state
       const updatedMember = {
         ...editingStaff,
         name: newStaffMember.fullName,
@@ -397,7 +402,13 @@ export default function StaffManagementPage() {
         phone: newStaffMember.phone || 'Not provided',
         hourlyRate: parseFloat(newStaffMember.hourlyRate) || 0,
         maxHours: parseInt(newStaffMember.maxHours) || 8,
-        availability: newStaffMember.availability
+        availability: newStaffMember.availability,
+        skills: newStaffMember.skills,
+        preferredShifts: newStaffMember.preferredShifts,
+        unavailableDays: newStaffMember.unavailableDays,
+        experienceLevel: newStaffMember.experienceLevel,
+        certifications: newStaffMember.certifications,
+        locationPreferences: newStaffMember.locationPreferences,
       };
       
       setStaff(prev => prev.map(member => 
@@ -420,14 +431,6 @@ export default function StaffManagementPage() {
     }
     
     try {
-      // Find the staff member to get their user_id
-      const memberToDelete = staff.find(member => member.id === id);
-      if (!memberToDelete) {
-        throw new Error('Staff member not found in state.');
-      }
-
-      // Delete staff member from staff_members table
-      // ON DELETE CASCADE on the user_id foreign key will handle the auth.users deletion.
       const { error } = await supabase
         .from('staff_members')
         .delete()
@@ -469,7 +472,6 @@ export default function StaffManagementPage() {
       <nav className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-lg">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo and Brand */}
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -482,7 +484,6 @@ export default function StaffManagementPage() {
                 </h1>
               </Link>
 
-              {/* Main Navigation */}
               <div className="hidden md:flex items-center space-x-1">
                 <Link href="/owner/dashboard" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,9 +515,7 @@ export default function StaffManagementPage() {
               </div>
             </div>
 
-            {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
-              {/* Language Switcher */}
               <LanguageSwitcher />
             </div>
           </div>
@@ -558,7 +557,6 @@ export default function StaffManagementPage() {
               </div>
             </div>
 
-            {/* Add New Staff Button */}
             <button
               onClick={openModal}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
@@ -571,7 +569,6 @@ export default function StaffManagementPage() {
           </div>
         </div>
 
-        {/* Staff List Table or Empty State */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -583,7 +580,7 @@ export default function StaffManagementPage() {
         ) : staff.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 text-center">
             <svg className="w-16 h-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 13a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1h16a1 1 0 011 1v6zm-10 1h2m-2 4h2m-4-4h2m-2 4h2m-2-4h2m-2 4h2m-2-4h2m-2 4h2M9 5h6M7 7h10" />
+              <path strokeLinecap="round" strokeLinecap="round" strokeWidth={1} d="M21 13a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1h16a1 1 0 011 1v6zm-10 1h2m-2 4h2m-4-4h2m-2 4h2m-2-4h2m-2 4h2m-2-4h2m-2 4h2M9 5h6M7 7h10" />
             </svg>
             <h3 className="text-xl font-semibold text-slate-700">{t('staffManagement.noStaffMessage')}</h3>
             <p className="text-slate-500 mt-2 max-w-sm">
@@ -684,151 +681,101 @@ export default function StaffManagementPage() {
         )}
       </div>
 
-      {/* New Staff Modal */}
+      {/* New Staff Modal with Multi-Step Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative animate-slide-up">
             <button onClick={closeModal} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="text-2xl font-bold text-slate-900 mb-4">
+            
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">
               {isEditMode ? t('staffManagement.modal.editTitle') : t('staffManagement.modal.addTitle')}
             </h3>
             <p className="text-sm text-slate-600 mb-6">
-              {isEditMode 
-                ? t('staffManagement.modal.editDescription') 
-                : t('staffManagement.modal.addDescription')}
+              Step {currentStep} of 2
             </p>
 
-            <form onSubmit={e => e.preventDefault()} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Full Name */}
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.fullName')}</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  id="fullName"
-                  value={newStaffMember.fullName}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  placeholder="Jane Doe"
-                  required
-                />
-              </div>
+            <form onSubmit={e => e.preventDefault()}>
+              {currentStep === 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Basic Information Fields */}
+                  <div>
+                    <label htmlFor="fullName" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.fullName')}</label>
+                    <input type="text" name="fullName" id="fullName" value={newStaffMember.fullName} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="Jane Doe" required />
+                  </div>
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.email')}</label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  value={newStaffMember.email}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  placeholder="jane.doe@example.com"
-                  required
-                />
-              </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.email')}</label>
+                    <input type="email" name="email" id="email" value={newStaffMember.email} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="jane.doe@example.com" required />
+                  </div>
 
-              {/* Phone Number */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.phoneNumber')}</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  id="phone"
-                  value={newStaffMember.phone}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  placeholder="(123) 456-7890"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.phoneNumber')}</label>
+                    <input type="tel" name="phone" id="phone" value={newStaffMember.phone} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="(123) 456-7890" />
+                  </div>
 
-              {/* Hourly Rate */}
-              <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.hourlyRate')}</label>
-                <input
-                  type="number"
-                  name="hourlyRate"
-                  id="hourlyRate"
-                  value={newStaffMember.hourlyRate}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="role" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.role')}</label>
+                    <input type="text" name="role" id="role" value={newStaffMember.role} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Stylist, Server" required />
+                  </div>
 
-              {/* Max Hours Per Week */}
-              <div>
-                <label htmlFor="maxHours" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.maxHoursWeek')}</label>
-                <input
-                  type="number"
-                  name="maxHours"
-                  id="maxHours"
-                  value={newStaffMember.maxHours}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  min="1"
-                  max="168"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="hourlyRate" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.hourlyRate')}</label>
+                    <input type="number" name="hourlyRate" id="hourlyRate" value={newStaffMember.hourlyRate} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" min="0" step="0.01" />
+                  </div>
 
-              {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-900">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  value={newStaffMember.password}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  placeholder="••••••••"
-                  required={!isEditMode} // Password is only required for new staff
-                />
-              </div>
+                  <div>
+                    <label htmlFor="maxHours" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.maxHoursWeek')}</label>
+                    <input type="number" name="maxHours" id="maxHours" value={newStaffMember.maxHours} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" min="1" max="168" />
+                  </div>
 
-              {/* Role */}
-              <div className="md:col-span-2">
-                <label htmlFor="role" className="block text-sm font-medium text-slate-900">{t('staffManagement.modal.role')}</label>
-                <input
-                  type="text"
-                  name="role"
-                  id="role"
-                  value={newStaffMember.role}
-                  onChange={handleNewStaffChange}
-                  className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900"
-                  placeholder="e.g., Stylist, Server, Manager"
-                  required
-                />
-              </div>
-
-              {/* Availability Section */}
-              <div className="md:col-span-2">
-                <h4 className="text-sm font-medium text-slate-900">Availability (Optional)</h4>
-                <p className="text-xs text-slate-700 mb-3">Select the days this staff member is available to work.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                    <div key={day} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={day}
-                        name="availability"
-                        value={day}
-                        checked={newStaffMember.availability.some(d => d.day === day)}
-                        onChange={handleNewStaffDayChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                      />
-                      <label htmlFor={day} className="ml-2 block text-sm text-slate-900">{day.substring(0, 3)}</label>
+                  {!isEditMode && (
+                    <div className="md:col-span-2">
+                      <label htmlFor="password" className="block text-sm font-medium text-slate-900">Password</label>
+                      <input type="password" name="password" id="password" value={newStaffMember.password} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="••••••••" required />
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              )}
+
+              {currentStep === 2 && (
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Additional Information Fields */}
+                  <div>
+                    <label htmlFor="skills" className="block text-sm font-medium text-slate-900">Skills</label>
+                    <input type="text" name="skills" id="skills" value={newStaffMember.skills} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Barista, Cashier, Customer Service" />
+                  </div>
+
+                  <div>
+                    <label htmlFor="preferredShifts" className="block text-sm font-medium text-slate-900">Preferred Shifts</label>
+                    <input type="text" name="preferredShifts" id="preferredShifts" value={newStaffMember.preferredShifts} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Mornings, Weekends" />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="unavailableDays" className="block text-sm font-medium text-slate-900">Unavailable Days</label>
+                    <input type="text" name="unavailableDays" id="unavailableDays" value={newStaffMember.unavailableDays} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Monday, Wednesday" />
+                  </div>
+
+                  <div>
+                    <label htmlFor="experienceLevel" className="block text-sm font-medium text-slate-900">Experience Level</label>
+                    <input type="text" name="experienceLevel" id="experienceLevel" value={newStaffMember.experienceLevel} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Entry-Level, Mid-Level, Senior" />
+                  </div>
+
+                  <div>
+                    <label htmlFor="certifications" className="block text-sm font-medium text-slate-900">Certifications</label>
+                    <input type="text" name="certifications" id="certifications" value={newStaffMember.certifications} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., CPR, Food Handler Permit" />
+                  </div>
+
+                  <div>
+                    <label htmlFor="locationPreferences" className="block text-sm font-medium text-slate-900">Location Preferences</label>
+                    <input type="text" name="locationPreferences" id="locationPreferences" value={newStaffMember.locationPreferences} onChange={handleNewStaffChange} className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3 text-slate-900" placeholder="e.g., Downtown, North Side" />
+                  </div>
+                </div>
+              )}
             </form>
 
-            <div className="mt-8 flex justify-end space-x-3">
+            <div className="mt-8 flex justify-between space-x-3">
               <button
                 type="button"
                 onClick={closeModal}
@@ -836,24 +783,47 @@ export default function StaffManagementPage() {
               >
                 {t('staffManagement.modal.cancel')}
               </button>
-              <button
-                type="button"
-                onClick={isEditMode ? handleUpdateStaff : handleAddStaff}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {isEditMode ? t('staffManagement.modal.updating') : t('staffManagement.modal.adding')}
-                  </div>
-                ) : (
-                  isEditMode ? t('staffManagement.modal.updateStaff') : t('staffManagement.modal.addStaff')
+
+              <div className="flex space-x-3">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={handlePreviousStep}
+                    className="px-6 py-3 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    Previous
+                  </button>
                 )}
-              </button>
+
+                {currentStep < 2 ? (
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={isEditMode ? handleUpdateStaff : handleAddStaff}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {isEditMode ? t('staffManagement.modal.updating') : t('staffManagement.modal.adding')}
+                      </div>
+                    ) : (
+                      isEditMode ? t('staffManagement.modal.updateStaff') : t('staffManagement.modal.addStaff')
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

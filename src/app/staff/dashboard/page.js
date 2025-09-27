@@ -34,26 +34,26 @@ const RequestForm = ({ submitHandler, submitState, t }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">{t('staffDashboard.timeOff.requestForm.startDate')}</label>
-            <input name="start-date" type="date" required className="w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            <input name="start-date" type="date" required className="text-black w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">{t('staffDashboard.timeOff.requestForm.startTime')}</label>
-            <input name="start-time" type="time" required className="w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            <input name="start-time" type="time" required className="text-black w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">{t('staffDashboard.timeOff.requestForm.endDate')}</label>
-            <input name="end-date" type="date" required className="w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            <input name="end-date" type="date" required className="text-black w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">{t('staffDashboard.timeOff.requestForm.endTime')}</label>
-            <input name="end-time" type="time" required className="w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            <input name="end-time" type="time" required className="text-black w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
           </div>
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">{t('staffDashboard.timeOff.requestForm.reason')}</label>
-          <input name="reason" type="text" placeholder={t('staffDashboard.timeOff.requestForm.shortNote')} className="w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          <input name="reason" type="text" placeholder={t('staffDashboard.timeOff.requestForm.shortNote')} className="text-black w-full px-2 py-2 sm:px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200" />
         </div>
         <button
           type="submit"
@@ -663,5 +663,5 @@ function MiniMonthCalendar({ shifts }) {
         );
       })}
     </div>
-  );
+  )
 }
