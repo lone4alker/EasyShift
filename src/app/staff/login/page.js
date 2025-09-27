@@ -95,14 +95,14 @@ export default function StaffLogin() {
       <div className="relative z-10 pt-6">
         <div className="container mx-auto px-6">
           <nav className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-slate-500 hover:text-emerald-600 transition-colors duration-200 flex items-center">
+            <Link href="/" className="text-black hover:text-emerald-600 transition-colors duration-200 flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
               Home
             </Link>
-            <span className="text-slate-400">/</span>
-            <span className="text-slate-700 font-medium">Staff Login</span>
+            <span className="text-black">/</span>
+            <span className="text-black font-medium">Staff Login</span>
           </nav>
         </div>
       </div>
@@ -117,8 +117,8 @@ export default function StaffLogin() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Staff Portal</h1>
-            <p className="text-slate-600">
+            <h1 className="text-3xl font-bold text-black mb-2">Staff Portal</h1>
+            <p className="text-black">
               Welcome! Access your shifts and schedule
             </p>
           </div>
@@ -132,14 +132,14 @@ export default function StaffLogin() {
                     <svg className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-red-700 font-medium text-sm">{error}</span>
+                    <span className="text-black font-medium text-sm">{error}</span>
                   </div>
                 </div>
               )}
 
               {/* Email Field */}
               <div className="space-y-2">
-                <label htmlFor="staff-email" className="block text-sm font-semibold text-slate-700">
+                <label htmlFor="staff-email" className="block text-sm font-semibold text-black">
                   Work Email
                 </label>
                 <div className="relative">
@@ -150,14 +150,14 @@ export default function StaffLogin() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setEmailTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
+                    className={`text-black w-full px-4 py-3 pl-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
                       emailTouched && !isEmailValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : 'border-slate-200 focus:border-emerald-500 bg-white'
                     }`}
                     required
                   />
-                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                   </svg>
                 </div>
@@ -173,7 +173,7 @@ export default function StaffLogin() {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <label htmlFor="staff-password" className="block text-sm font-semibold text-slate-700">
+                <label htmlFor="staff-password" className="block text-sm font-semibold text-black">
                   Password
                 </label>
                 <div className="relative">
@@ -184,20 +184,20 @@ export default function StaffLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => setPasswordTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 pr-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
+                    className={`text-black w-full px-4 py-3 pl-12 pr-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
                       passwordTouched && !isPasswordValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : 'border-slate-200 focus:border-emerald-500 bg-white'
                     }`}
                     required
                   />
-                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors duration-200"
+                    className="absolute right-4 top-3.5 text-black hover:text-slate-600 transition-colors duration-200"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {showPassword ? (
@@ -224,9 +224,9 @@ export default function StaffLogin() {
                   <svg className="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-medium text-emerald-800">Quick Access</span>
+                  <span className="text-sm font-medium text-black">Quick Access</span>
                 </div>
-                <div className="text-xs text-emerald-700 space-y-1">
+                <div className="text-xs text-black space-y-1">
                   <div>• View your current week schedule</div>
                   <div>• Check upcoming shifts</div>
                   <div>• Request shift swaps</div>
@@ -265,12 +265,12 @@ export default function StaffLogin() {
             {/* Alternative Actions */}
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="text-center">
-                <p className="text-sm text-slate-600 mb-4">
+                <p className="text-sm text-black mb-4">
                   New staff?
                 </p>
                 <Link
                   href="/staff/signup"
-                  className="inline-flex items-center px-4 py-2 border-2 border-slate-200 rounded-lg text-slate-700 hover:border-emerald-300 hover:text-emerald-600 font-medium transition-all duration-200 group"
+                  className="inline-flex items-center px-4 py-2 border-2 border-slate-200 rounded-lg text-black hover:border-emerald-300 hover:text-emerald-600 font-medium transition-all duration-200 group"
                 >
                   <svg className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -283,7 +283,7 @@ export default function StaffLogin() {
 
           {/* Owner Login Link */}
           <div className="text-center mt-6">
-            <p className="text-slate-600 text-sm">
+            <p className="text-black text-sm">
               Are you a business owner?{' '}
               <Link href="/owner/login" className="text-emerald-600 hover:text-emerald-800 font-medium transition-colors duration-200">
                 Owner Portal
@@ -293,7 +293,7 @@ export default function StaffLogin() {
 
           {/* Contact Support */}
           <div className="text-center mt-4">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-black">
               Need assistance? Contact your manager or{' '}
               <button className="text-emerald-600 hover:text-emerald-800 underline">
                 support team
