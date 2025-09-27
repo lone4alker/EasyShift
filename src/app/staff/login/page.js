@@ -92,40 +92,40 @@ export default function StaffLogin() {
       <div className="absolute top-1/2 left-1/2 w-28 h-28 bg-gradient-to-r from-cyan-400/15 to-blue-400/15 rounded-full blur-2xl animate-pulse"></div>
 
       {/* Breadcrumb */}
-      <div className="relative z-10 pt-6">
-        <div className="container mx-auto px-6">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-slate-500 hover:text-emerald-600 transition-colors duration-200 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="relative z-10 pt-4 sm:pt-6">
+        <div className="container mx-auto px-4 sm:px-6">
+          <nav className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm overflow-x-auto">
+            <Link href="/" className="text-slate-500 hover:text-emerald-600 transition-colors duration-200 flex items-center flex-shrink-0">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
               Home
             </Link>
-            <span className="text-slate-400">/</span>
-            <span className="text-slate-700 font-medium">Staff Login</span>
+            <span className="text-slate-400 flex-shrink-0">/</span>
+            <span className="text-slate-700 font-medium truncate">Staff Login</span>
           </nav>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center min-h-screen px-6 relative z-10">
+      <div className="flex items-center justify-center min-h-screen px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         <div className="w-full max-w-md">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl shadow-lg mb-4 transform hover:scale-105 transition-transform duration-200">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl sm:rounded-2xl shadow-lg mb-3 sm:mb-4 transform hover:scale-105 transition-transform duration-200">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Staff Portal</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Staff Portal</h1>
+            <p className="text-sm sm:text-base text-slate-600">
               Welcome! Access your shifts and schedule
             </p>
           </div>
 
           {/* Login Form */}
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
+          <div className="bg-white/70 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-white/50 p-4 sm:p-6 lg:p-8">
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg" role="alert">
                   <div className="flex items-center">
@@ -150,7 +150,7 @@ export default function StaffLogin() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setEmailTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
+                    className={`btn-responsive w-full px-4 py-3 pl-10 sm:pl-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
                       emailTouched && !isEmailValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : 'border-slate-200 focus:border-emerald-500 bg-white'
@@ -184,7 +184,7 @@ export default function StaffLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => setPasswordTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 pr-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
+                    className={`btn-responsive w-full px-4 py-3 pl-10 sm:pl-12 pr-10 sm:pr-12 rounded-lg border-2 transition-all duration-200 focus:outline-none ${
                       passwordTouched && !isPasswordValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : 'border-slate-200 focus:border-emerald-500 bg-white'
@@ -237,7 +237,7 @@ export default function StaffLogin() {
               <button
                 type="submit"
                 disabled={loading || !isFormValid}
-                className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
+                className={`btn-responsive w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
                   loading || !isFormValid
                     ? 'bg-slate-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95'

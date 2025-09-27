@@ -1,12 +1,29 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useT } from '@/app/utils/translations';
 import Breadcrumbs from '../../../../components/ui/Breadcrumbs';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 import { supabase } from '@/app/utils/supabase';
+
+// Device detection utilities
+const isAndroidDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+};
+
+const isMobileDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (typeof window !== 'undefined' && window.innerWidth <= 768);
+};
+
+const isDesktopDevice = () => {
+  if (typeof navigator === 'undefined') return true;
+  return !isMobileDevice();
+};
 
 // --- Reusable Request Form Component ---
 const RequestForm = ({ submitHandler, submitState, t }) => {
@@ -41,7 +58,7 @@ const RequestForm = ({ submitHandler, submitState, t }) => {
         <button
           type="submit"
           disabled={submitState.loading}
-          className={`w-full sm:w-auto px-4 py-2 rounded-lg text-white font-semibold text-sm ${submitState.loading ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+          className={`btn-responsive w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg text-white font-semibold text-sm ${submitState.loading ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}
         >
           {submitState.loading ? t('staffDashboard.timeOff.requestForm.sending') : t('staffDashboard.timeOff.requestForm.sendRequest')}
         </button>
@@ -60,12 +77,16 @@ export default function StaffDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [staffId, setStaffId] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Attendance / timer state
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState(null);
   const [now, setNow] = useState(Date.now());
   const [attendanceLog, setAttendanceLog] = useState([]);
+
+  // Device detection state
+  const [isMobile, setIsMobile] = useState(false);
 
   // Schedule state
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
@@ -205,27 +226,22 @@ export default function StaffDashboard() {
   
   // --- UI Handlers ---
   const handleClockIn = () => {
-    setClockInTime(Date.now());
-    setIsClockedIn(true);
+    router.push('/staff/attendance?action=checkin');
   };
 
   const handleClockOut = () => {
-    const out = Date.now();
-    const entry = {
-      id: `a-${out}`,
-      in: new Date(clockInTime).toLocaleString(),
-      out: new Date(out).toLocaleString(),
-      duration: elapsed,
-    };
-    setAttendanceLog([entry, ...attendanceLog]);
-    setIsClockedIn(false);
-    setClockInTime(null);
+    router.push('/staff/attendance?action=checkout');
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/staff/login');
   };
+
+  // Device detection on mount
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
 
   // Convert IST local (YYYY-MM-DD, HH:MM) to UTC ISO
   const istToUtcIso = (dateStr, timeStr) => {
@@ -259,6 +275,18 @@ export default function StaffDashboard() {
                 <div className="text-xs sm:text-sm text-slate-500">{t('staffDashboard.staffPortal')}</div>
                 <div className="text-sm sm:text-base font-semibold text-slate-800">{t('navigation.dashboard')}</div>
               </div>
+              
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="btn-responsive lg:hidden p-3 sm:p-2 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors ml-2 min-h-[44px] min-w-[44px]"
+              >
+                <div className={`hamburger ${mobileMenuOpen ? 'hamburger-active' : ''}`}>
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                </div>
+              </button>
             </div>
             <div className="hidden lg:block max-w-lg flex-1 mx-6">
               <Breadcrumbs />
@@ -267,13 +295,115 @@ export default function StaffDashboard() {
               <div className="scale-90 sm:scale-100">
                 <LanguageSwitcher />
               </div>
-              <button onClick={handleLogout} className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition text-sm">{t('buttons.signOut')}</button>
+              <button onClick={handleLogout} className="btn-responsive hidden lg:block px-4 py-3 rounded-lg text-white bg-red-500 hover:bg-red-600 transition text-sm min-h-[44px] min-w-[44px]">{t('buttons.signOut')}</button>
             </div>
           </div>
           <div className="block lg:hidden mt-3">
             <Breadcrumbs />
           </div>
         </div>
+        
+        {/* Mobile Navigation Overlay */}
+        {mobileMenuOpen && (
+          <>
+            <div 
+              className="mobile-nav-overlay active lg:hidden fixed inset-0" 
+              onClick={() => setMobileMenuOpen(false)}
+            ></div>
+            <div className={`mobile-nav-sidebar ${mobileMenuOpen ? 'active' : ''} lg:hidden fixed top-0 left-0 h-full`}>
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <span className="font-semibold text-gray-900">{t('staffDashboard.staffPortal')}</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="py-4">
+                <div className="px-4 mb-4">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Navigation</div>
+                  <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium mb-2">
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.dashboard')}</span>
+                  </div>
+                </div>
+                
+                <nav className="px-4 space-y-1">
+                  <Link 
+                    href="/staff/schedule" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.schedule')}</span>
+                  </Link>
+                  
+                  <Link 
+                    href="/staff/time-off" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.timeOff')}</span>
+                  </Link>
+                  
+                  <Link 
+                    href="/staff/profile" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.profile')}</span>
+                  </Link>
+                </nav>
+                
+                <div className="px-4 mt-6 pt-4 border-t border-gray-200">
+                  <div className="mb-4">
+                    <LanguageSwitcher />
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 mb-2">
+                    {user?.email}
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="btn-responsive flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-base sm:text-sm min-h-[44px]"
+                  >
+                    <svg className="w-5 h-5 sm:w-4 sm:h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    {t('buttons.signOut')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </header>
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Hero row: Time Clock + Quick Stats */}
@@ -289,17 +419,40 @@ export default function StaffDashboard() {
                 <div className="text-xl sm:text-2xl font-mono font-bold text-slate-800">{elapsed}</div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                {!isClockedIn ? (
-                  <button onClick={handleClockIn} className="w-full sm:w-auto px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow">
-                    {t('staffDashboard.attendance.clockIn')}
+                {isMobile ? (
+                  // Single QR scan button for mobile devices
+                  <button 
+                    onClick={() => router.push('/staff/qr-scanner')} 
+                    className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6v6H9z" />
+                    </svg>
+                    <span>Check In with Camera</span>
                   </button>
                 ) : (
-                  <button onClick={handleClockOut} className="w-full sm:w-auto px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold shadow">
-                    {t('staffDashboard.attendance.clockOut')}
-                  </button>
+                  // Regular time-based buttons for desktop devices
+                  !isClockedIn ? (
+                    <button onClick={() => {/* Add regular clock-in logic */}} className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow flex items-center justify-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Clock In</span>
+                    </button>
+                  ) : (
+                    <button onClick={() => {/* Add regular clock-out logic */}} className="btn-responsive w-full sm:w-auto px-4 py-3 sm:px-5 rounded-lg sm:rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold shadow flex items-center justify-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Clock Out</span>
+                    </button>
+                  )
                 )}
               </div>
             </div>
+
+            
             <div className="mt-4 sm:mt-5">
               <div className="text-xs sm:text-sm font-medium text-slate-700 mb-2">{t('staffDashboard.attendance.pastShifts')}</div>
               <div className="space-y-2 max-h-48 sm:max-h-56 overflow-auto pr-1">
