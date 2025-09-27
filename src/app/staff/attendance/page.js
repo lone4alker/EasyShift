@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/app/utils/supabase';
 import { useT } from '@/app/utils/translations';
 
@@ -31,7 +32,7 @@ export default function StaffAttendance() {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [checkAuth, stream]);
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -289,9 +290,11 @@ export default function StaffAttendance() {
             {capturedImage && (
               <div className="text-center">
                 <div className="relative inline-block rounded-2xl overflow-hidden shadow-lg mb-4 w-full max-w-md mx-auto">
-                  <img
+                  <Image
                     src={capturedImage}
                     alt="Captured attendance photo"
+                    width={400}
+                    height={300}
                     className="w-full h-auto aspect-[4/3] object-cover"
                   />
                   <div className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">

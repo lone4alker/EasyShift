@@ -173,7 +173,7 @@ export default function ScheduleDashboardPage() {
       await fetchOwnerData(user); 
     }
     setLoading(false);
-  }, [router]);
+  }, [router, fetchOwnerData]);
 
   useEffect(() => {
     checkAuth();

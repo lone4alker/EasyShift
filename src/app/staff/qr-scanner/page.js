@@ -344,7 +344,7 @@ export default function QRScannerPage() {
       clearTimeout(timer);
       stopCamera();
     };
-  }, []);
+  }, [startCamera, stopCamera]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -383,7 +383,7 @@ export default function QRScannerPage() {
                 {cameraError.includes('permission') && (
                   <div className="bg-blue-900 bg-opacity-50 rounded-lg p-3 mb-4">
                     <p className="text-blue-200 text-xs leading-relaxed">
-                      📱 <strong>On Android:</strong> Tap "Allow" when prompted<br/>
+                      📱 <strong>On Android:</strong> Tap &quot;Allow&quot; when prompted<br/>
                       💻 <strong>On Desktop:</strong> Click the camera icon in address bar
                     </p>
                   </div>
@@ -538,8 +538,8 @@ export default function QRScannerPage() {
             
             {/* Permission help */}
             <div className="text-xs text-slate-500 mt-2">
-              <p>📱 On mobile: Tap "Allow" when browser asks for camera permission</p>
-              <p>💻 On desktop: Click "Allow" in the camera permission popup</p>
+              <p>📱 On mobile: Tap &quot;Allow&quot; when browser asks for camera permission</p>
+              <p>💻 On desktop: Click &quot;Allow&quot; in the camera permission popup</p>
             </div>
           </div>
         </div>
