@@ -195,7 +195,7 @@ export default function ScheduleDashboardPage() {
     } else {
       console.log('No business data found for user');
     }
-  }, []);
+  };
 
   const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
