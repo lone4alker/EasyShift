@@ -386,59 +386,117 @@ class StoreRecommendationAgent:
             return f"Error generating AI recommendations (Gemini): {e}"
     
     def generate_comprehensive_recommendations(self, shop_id: str) -> Dict:
-        """Main method to generate comprehensive recommendations for a shop."""
+        """Main method to generate simplified payroll and expenditure report."""
         self.set_shop(shop_id)
         
-        print("Fetching comprehensive shop data...")
+        print("Fetching shop data...")
         raw_data = self.fetch_comprehensive_data()
         
-        print("Analyzing staffing efficiency...")
-        staffing_analysis = self.analyze_staffing_efficiency(raw_data)
+        print("Calculating payroll expenditure...")
+        payroll_summary = self.calculate_payroll_expenditure(raw_data)
         
-        print("Analyzing festival patterns and seasonal trends...")
-        festival_analysis = self.analyze_festival_patterns(raw_data)
-        
-        print("Analyzing profit optimization opportunities...")
-        profit_analysis = self.analyze_profit_optimization(raw_data)
-        
-        # Combine all analysis
-        combined_analysis = {
-            'staffing': staffing_analysis,
-            'festivals': festival_analysis,
-            'profit': profit_analysis,
-            'period': raw_data['analysis_period']
-        }
-        
-        print("Generating AI-powered recommendations...")
-        ai_recommendations = self.generate_ai_recommendations(combined_analysis)
-        
-        # Generate immediate action items
-        immediate_actions = self._generate_immediate_actions(combined_analysis)
-        
-        # Structure final recommendations
+        # Structure simplified recommendations (no AI summary needed for PDF)
         recommendations = {
             'shop_id': shop_id,
             'generated_at': datetime.now().isoformat(),
-            'analysis_summary': combined_analysis,
-            'ai_recommendations': ai_recommendations,
-            'immediate_actions': immediate_actions,
-            'profit_impact_score': self._calculate_profit_impact_score(combined_analysis),
-            'implementation_timeline': self._create_implementation_timeline(combined_analysis)
+            'payroll_summary': payroll_summary,
+            'current_period': raw_data['analysis_period']
         }
         
-        # Save to database (you might want to create a recommendations table)
-        try:
-            self.supabase.table('ai_recommendations').upsert({
-                'shop_id': shop_id,
-                'recommendations_data': recommendations,
-                'created_at': datetime.now().isoformat(),
-                'updated_at': datetime.now().isoformat()
-            }).execute()
-            print("Recommendations saved to database.")
-        except Exception as e:
-            print(f"Could not save recommendations: {e}")
-        
         return recommendations
+    
+    def calculate_payroll_expenditure(self, data: Dict) -> Dict:
+        """Calculate total payroll expenditure (simplified for faster PDF generation)."""
+        staff_df = pd.DataFrame(data['staff_members']) if data['staff_members'] else pd.DataFrame()
+        shifts_df = pd.DataFrame(data['shifts']) if data['shifts'] else pd.DataFrame()
+        
+        payroll_summary = {
+            'total_expenditure': 0,
+            'total_hours': 0,
+            'period_summary': {}
+        }
+        
+        if staff_df.empty:
+            return payroll_summary
+        
+        # Calculate total hours worked (simplified - no individual tracking)
+        total_hours = 0
+        if not shifts_df.empty and 'start_time' in shifts_df.columns and 'end_time' in shifts_df.columns:
+            shifts_df['start_time'] = pd.to_datetime(shifts_df['start_time'])
+            shifts_df['end_time'] = pd.to_datetime(shifts_df['end_time'])
+            shifts_df['hours_worked'] = (shifts_df['end_time'] - shifts_df['start_time']).dt.total_seconds() / 3600
+            total_hours = shifts_df['hours_worked'].sum()
+        
+        # Calculate total expenditure using average hourly rate
+        avg_hourly_rate = staff_df['hourly_rate'].mean() if 'hourly_rate' in staff_df.columns else 0
+        total_expenditure = avg_hourly_rate * total_hours
+        
+        # Round totals
+        payroll_summary['total_expenditure'] = round(total_expenditure, 2)
+        payroll_summary['total_hours'] = round(total_hours, 2)
+        
+        # Add period summary
+        payroll_summary['period_summary'] = {
+            'total_employees': len(staff_df),
+            'average_hourly_rate': round(avg_hourly_rate, 2),
+            'average_hours_per_employee': round(total_hours / len(staff_df), 2) if len(staff_df) > 0 else 0
+        }
+        
+        return payroll_summary
+    
+    def generate_brief_summary(self, payroll_data: Dict, raw_data: Dict) -> str:
+        """Generate a brief AI summary focusing on payroll and current status."""
+        total_expenditure = payroll_data.get('total_expenditure', 0)
+        total_hours = payroll_data.get('total_hours', 0)
+        total_employees = payroll_data.get('period_summary', {}).get('total_employees', 0)
+        avg_hourly_rate = payroll_data.get('period_summary', {}).get('average_hourly_rate', 0)
+        
+        # Get current staff count
+        staff_count = len(raw_data.get('staff_members', []))
+        shifts_count = len(raw_data.get('shifts', []))
+        
+        context = f"""
+        CURRENT BUSINESS STATUS:
+        
+        PAYROLL SUMMARY:
+        - Total expenditure on employees: ₹{total_expenditure:,.2f}
+        - Total hours worked: {total_hours:.1f} hours
+        - Number of employees: {total_employees}
+        - Average hourly rate: ₹{avg_hourly_rate:.2f}
+        
+        OPERATIONAL DATA:
+        - Active staff members: {staff_count}
+        - Total shifts scheduled: {shifts_count}
+        - Analysis period: {raw_data.get('analysis_period', 'Current period')}
+        """
+        
+        prompt = f"""
+        As a business consultant, provide a brief summary (max 200 words) focusing on:
+
+        1. CURRENT PAYROLL STATUS:
+        - Total labor cost analysis
+        - Cost per hour efficiency
+        - Staff utilization insights
+
+        2. QUICK RECOMMENDATIONS:
+        - One immediate cost optimization tip
+        - One staffing efficiency suggestion
+        - Brief operational insight
+
+        Business Data:
+        {context}
+
+        Keep it concise and actionable. Focus on numbers and practical advice.
+        """
+        
+        try:
+            response = self.gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=f"{prompt}"
+            )
+            return response.text
+        except Exception as e:
+            return f"Brief analysis: Total payroll expenditure is ₹{total_expenditure:,.2f} for {total_hours:.1f} hours across {total_employees} employees. Average hourly rate: ₹{avg_hourly_rate:.2f}. Consider optimizing shift scheduling for better cost efficiency."
     
     def _generate_immediate_actions(self, analysis: Dict) -> List[Dict]:
         """Generate immediate actionable items."""

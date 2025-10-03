@@ -22,7 +22,37 @@ export default function OwnerDashboard() {
     monthlyRevenue: 0
   });
   const [businessId, setBusinessId] = useState(null);
+  const [aiInsights, setAiInsights] = useState([]);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const router = useRouter();
+
+  const fetchAIInsights = async (businessId) => {
+    if (!businessId) return;
+    
+    setIsLoadingInsights(true);
+    try {
+      const response = await fetch('/api/ai-insights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ businessId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiInsights(data.insights || []);
+      } else {
+        console.error('Failed to fetch AI insights');
+        setAiInsights([]);
+      }
+    } catch (error) {
+      console.error('Error fetching AI insights:', error);
+      setAiInsights([]);
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  };
 
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
@@ -61,6 +91,8 @@ export default function OwnerDashboard() {
           console.log('Successfully found business data:', businessData);
           setOwnerData(businessData);
           setBusinessId(businessData.id);
+          // Fetch AI insights for this business
+          fetchAIInsights(businessData.id);
           return;
         }
       } catch (err) {
@@ -208,13 +240,13 @@ export default function OwnerDashboard() {
     }
   };
 
-  // Export: fetch data -> backend AI -> generate PDF
+  // Export: Generate simplified payroll report PDF
   const handleExportReport = async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) return;
 
-      // 1) Get businesses owned by the user using email
+      // Get business ID for the current user
       const { data: userBusinesses } = await supabase
         .from('businesses')
         .select('*')
@@ -225,133 +257,80 @@ export default function OwnerDashboard() {
         return;
       }
 
-      const businessIds = userBusinesses.map(b => b.business_id);
+      const businessId = userBusinesses[0].business_id;
+      const businessName = userBusinesses[0].shop_name || 'Business';
 
-      // 2) Fetch staff for these businesses
-      const { data: staffMembers } = await supabase
-        .from('staff_members')
-        .select('*')
-        .in('business_id', businessIds);
+      // Show loading state
+      const loadingAlert = alert('Generating payroll report... This may take a moment.');
 
-      const staffIds = (staffMembers || []).map(s => s.staff_id);
+      // Call our simplified API endpoint
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-      // 3) Parallel fetch of related tables
-      const [availabilityRes, staffRolesRes, timeOffRes, schedulesRes, hoursRes] = await Promise.all([
-        supabase.from('staff_availability').select('*').in('staff_id', staffIds),
-        supabase.from('staff_roles').select('*').in('staff_id', staffIds),
-        supabase.from('time_off_requests').select('*').in('staff_id', staffIds),
-        supabase.from('schedules').select('*').in('business_id', businessIds),
-        supabase.from('business_hours').select('*').in('business_id', businessIds)
-      ]);
-
-      // 4) Shifts are tied to schedules; fetch but ignore errors if table missing
-      let shifts = [];
-      try {
-        const scheduleIds = (schedulesRes.data || []).map(s => s.schedule_id);
-        if (scheduleIds.length > 0) {
-          const { data: shiftData } = await supabase
-            .from('shifts')
-            .select('*')
-            .in('schedule_id', scheduleIds);
-          shifts = shiftData || [];
-        }
-      } catch (_) {}
-
-      const payload = {
-        metadata: {
-          owner_email: currentUser.email,
-          business_ids: businessIds,
-          generated_at: new Date().toISOString()
+      const response = await fetch('/api/generate-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        businesses: userBusinesses,
-        staff_members: staffMembers || [],
-        staff_availability: availabilityRes.data || [],
-        staff_roles: staffRolesRes.data || [],
-        time_off_requests: timeOffRes.data || [],
-        schedules: schedulesRes.data || [],
-        shifts: shifts,
-        business_hours: hoursRes.data || []
-      };
+        body: JSON.stringify({
+          businessId: businessId,
+          daysBack: 30
+        }),
+        signal: controller.signal
+      });
 
-      // 5) Call backend for recommendations (with fallback hosts and timeout)
-      const tryHosts = [
-        process.env.NEXT_PUBLIC_PY_API_URL,
-        'http://127.0.0.1:5000',
-        'http://localhost:5000'
-      ].filter(Boolean);
+      clearTimeout(timeoutId);
 
-      let rec = null;
-      let lastErr = null;
-      for (const host of tryHosts) {
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort('timeout'), 30000);
-          const resp = await fetch(`${host}/api/recommendations`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          });
-          clearTimeout(timer);
-          if (resp.ok) {
-            rec = await resp.json();
-            break;
-          } else {
-            lastErr = new Error(`Backend responded ${resp.status} at ${host}`);
-          }
-        } catch (e) {
-          // If aborted due to timeout, try next host; otherwise capture error
-          if (e && e.name === 'AbortError') {
-            lastErr = new Error(`Request timed out at ${host}`);
-          } else {
-            lastErr = e;
-          }
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate payroll report');
       }
 
-      if (!rec) throw lastErr || new Error('Failed to reach recommendation backend');
+      const payrollData = await response.json();
 
-      // 6) Generate PDF
+      // Generate PDF with minimal payroll data only
       const { default: jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF();
-      const businessName = userBusinesses[0]?.shop_name || 'Business';
 
-      doc.setFontSize(16);
-      doc.text(`EasyShift Report - ${businessName}`, 14, 18);
+      // Header
+      doc.setFontSize(18);
+      doc.text(`Payroll Report - ${businessName}`, 14, 20);
       doc.setFontSize(11);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 26);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+      doc.text(`Period: ${payrollData.current_period || 'Last 30 days'}`, 14, 38);
 
-      // Overview
-      const overview = [
-        `Total Staff: ${stats.totalStaff}`,
-        `Active Staff: ${stats.activeStaff}`,
-        `Today's Attendance: ${stats.todaysAttendance}`
+      const summary = payrollData.payroll_summary || {};
+
+      // Payroll Summary Box (main content)
+      doc.setFillColor(240, 248, 255);
+      doc.rect(14, 50, 180, 35, 'F');
+      doc.setFontSize(16);
+      doc.text('Payroll Summary', 20, 65);
+      doc.setFontSize(12);
+      
+      const summaryData = [
+        `Total Expenditure: ₹${summary.total_expenditure?.toFixed(2) || '0.00'}`,
+        `Total Hours: ${summary.total_hours?.toFixed(1) || '0.0'} hours`,
+        `Average Hourly Rate: ₹${summary.period_summary?.average_hourly_rate?.toFixed(2) || '0.00'}`,
+        `Total Employees: ${summary.period_summary?.total_employees || 0}`
       ];
-      doc.text('Overview', 14, 36);
-      overview.forEach((l, i) => doc.text(`- ${l}`, 18, 44 + i * 6));
+      
+      summaryData.forEach((line, i) => {
+        doc.text(line, 20, 75 + i * 6);
+      });
 
-      // AI Recommendations
-      doc.text('AI Recommendations', 14, 66);
-      const recText = (rec.ai_recommendations || '').substring(0, 2500); // avoid huge PDFs
-      doc.setFontSize(10);
-      const split = doc.splitTextToSize(recText, 180);
-      doc.text(split, 14, 74);
+      // Save PDF
+      doc.save(`Payroll_Report_${businessName}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      alert(`Payroll report generated successfully! Total expenditure: ₹${summary.total_expenditure?.toFixed(2) || '0.00'}`);
 
-      // Immediate Actions table
-      if (Array.isArray(rec.immediate_actions) && rec.immediate_actions.length > 0) {
-        autoTable(doc, {
-          startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 140,
-          head: [['Priority', 'Category', 'Action', 'Deadline']],
-          body: rec.immediate_actions.map(a => [a.priority, a.category, a.action, (a.deadline || '').toString().slice(0, 10)])
-        });
+    } catch (error) {
+      console.error('Export failed:', error);
+      if (error.name === 'AbortError') {
+        alert('Export timed out. Please try again or check your connection.');
+      } else {
+        alert(`Failed to export report: ${error.message}`);
       }
-
-      doc.save('EasyShift_Report.pdf');
-    } catch (e) {
-      console.error('Export failed:', e);
-      alert('Failed to export report. Check console for details.');
     }
   };
 
@@ -509,7 +488,7 @@ export default function OwnerDashboard() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="text-sm">Export Report</span>
+                <span className="text-sm">Export Payroll Report</span>
               </button>
             </div>
           </div>
@@ -623,7 +602,72 @@ export default function OwnerDashboard() {
             </div>
 
             {/* AI Insights */}
-            <AIInsights user={user} />
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-slate-200/50">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">🤖 AI Insights for Today</h2>
+                <button 
+                  onClick={() => fetchAIInsights(businessId)}
+                  disabled={isLoadingInsights}
+                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                >
+                  {isLoadingInsights ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+              
+              {isLoadingInsights ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-slate-600">Loading insights...</span>
+                </div>
+              ) : aiInsights.length > 0 ? (
+                <div className="space-y-4">
+                  {aiInsights.map((insight, index) => (
+                    <div key={index} className={`p-4 rounded-lg border-l-4 ${
+                      insight.priority === 'high' ? 'bg-red-50 border-red-400' :
+                      insight.priority === 'medium' ? 'bg-yellow-50 border-yellow-400' :
+                      'bg-blue-50 border-blue-400'
+                    }`}>
+                      <div className="flex items-start space-x-3">
+                        <span className="text-2xl">{insight.icon}</span>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-900 text-sm sm:text-base">
+                            {insight.title}
+                          </h3>
+                          <p className="text-slate-700 text-xs sm:text-sm mt-1">
+                            {insight.message}
+                          </p>
+                          {insight.details && (
+                            <p className="text-slate-600 text-xs mt-2">
+                              📋 {insight.details}
+                            </p>
+                          )}
+                          {insight.recommendation && (
+                            <p className="text-slate-600 text-xs mt-2">
+                              💡 {insight.recommendation}
+                            </p>
+                          )}
+                          <div className="mt-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              insight.priority === 'high' ? 'bg-red-100 text-red-800' :
+                              insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {insight.priority.toUpperCase()} PRIORITY
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-500">
+                  <div className="text-4xl mb-2">🤖</div>
+                  <p className="text-sm">No insights available for today</p>
+                  <p className="text-xs mt-1">Check back later for AI-powered recommendations</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Performance Overview */}

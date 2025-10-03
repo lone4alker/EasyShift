@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { supabase } from '@/app/utils/supabase';
 import { useT } from '@/app/utils/translations';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
-import ScheduleAIInsights from './components/ScheduleAIInsights';
 
 export default function ScheduleDashboardPage() {
   const [user, setUser] = useState(null);
@@ -15,6 +14,10 @@ export default function ScheduleDashboardPage() {
   const router = useRouter();
   const [scheduleView, setScheduleView] = useState('List View');
   const [scheduleShifts, setScheduleShifts] = useState([]);
+  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
+  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState(null);
+  const [aiInsights, setAiInsights] = useState([]);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   
   const [scheduleData, setScheduleData] = useState({
     totalShifts: 0,
@@ -132,6 +135,34 @@ export default function ScheduleDashboardPage() {
     }
   };
 
+  const fetchAIInsights = async (businessId) => {
+    if (!businessId) return;
+    
+    setIsLoadingInsights(true);
+    try {
+      const response = await fetch('/api/ai-insights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ businessId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiInsights(data.insights || []);
+      } else {
+        console.error('Failed to fetch AI insights');
+        setAiInsights([]);
+      }
+    } catch (error) {
+      console.error('Error fetching AI insights:', error);
+      setAiInsights([]);
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  };
+
   const fetchOwnerData = async (user) => {
     console.log('Fetching owner data for user ID:', user.id);
     let businessData = null;
@@ -158,7 +189,9 @@ export default function ScheduleDashboardPage() {
     if (businessData) {
       setOwnerData(businessData);
       // Use the correct business ID column
-      await fetchScheduleData(businessData.business_id); 
+      await fetchScheduleData(businessData.business_id);
+      // Fetch AI insights for this business
+      fetchAIInsights(businessData.business_id); 
     } else {
       console.log('No business data found for user');
     }
@@ -270,48 +303,284 @@ export default function ScheduleDashboardPage() {
     }
   };
 
+  const handleGenerateAISchedule = async () => {
+  setIsGeneratingSchedule(true);
+  setError(null);
+  
+  try {
+    console.log(`Generating AI schedule for business: ${currentBusiness.id}`);
+    
+    // Use your ngrok URL
+    const response = await fetch('https://797b3460842e.ngrok-free.app/recommend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        businessId: currentBusiness.id,
+        daysBack: 30
+      }),
+    });
+
+    // Check if response is OK before parsing as JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.success) {
+      console.log('AI schedule generated successfully:', data);
+      setAiSchedule(data);
+      
+      // Display success message
+      setError(null);
+    } else {
+      throw new Error(data.error || 'Failed to generate schedule');
+    }
+    
+  } catch (error) {
+    console.error('Error generating AI schedule:', error);
+    setError(error.message);
+  } finally {
+    setIsGeneratingSchedule(false);
+  }
+};
+
+
   const renderScheduleSubView = () => {
     switch (scheduleView) {
       case 'Calendar View':
+        // Generate calendar data from AI schedule or use default
+        const generateCalendarData = () => {
+          if (aiGeneratedSchedule?.calendar?.days) {
+            const calendarDays = aiGeneratedSchedule.calendar.days;
+            const startDate = new Date(aiGeneratedSchedule.calendar.start_date);
+            const endDate = new Date(aiGeneratedSchedule.calendar.end_date);
+            
+            // Create a map of date to shifts
+            const shiftsByDate = {};
+            calendarDays.forEach(day => {
+              shiftsByDate[day.date] = day.shifts || [];
+            });
+            
+            return { startDate, endDate, shiftsByDate, calendarDays };
+          }
+          
+          // Default calendar for current week
+          const today = new Date();
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          
+          return { startDate: startOfWeek, endOfWeek, shiftsByDate: {}, calendarDays: [] };
+        };
+
+        const { startDate, endDate, shiftsByDate, calendarDays } = generateCalendarData();
+        
+        // Generate week days
+        const weekDays = [];
+        const currentDate = new Date(startDate);
+        for (let i = 0; i < 7; i++) {
+          weekDays.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">Schedule Calendar</h3>
+              <h3 className="text-xl font-semibold text-slate-800">
+                {aiGeneratedSchedule ? 'AI Generated Schedule Calendar' : 'Schedule Calendar'}
+              </h3>
               <div className="flex items-center space-x-4">
+                <button 
+                  onClick={handleGenerateAISchedule}
+                  disabled={isGeneratingSchedule}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                >
+                  {isGeneratingSchedule ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span className="text-sm">Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09 3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                      </svg>
+                      <span className="text-sm">Generate AI Schedule</span>
+                    </>
+                  )}
+                </button>
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
                   <option>All Staff</option>
                 </select>
                 <select className="rounded-lg border-slate-300 text-sm px-3 py-2 bg-white">
                   <option>All Roles</option>
                 </select>
-                <div className="flex items-center space-x-2">
-                  <button className="text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                  </button>
-                  <span className="text-sm font-medium text-slate-700">Sep 21 - Sep 27</span>
-                  <button className="text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                  </button>
-                </div>
               </div>
             </div>
+
+            {/* AI Schedule Summary */}
+            {aiGeneratedSchedule && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-800">{aiGeneratedSchedule.optimizedSchedule?.length || 0}</div>
+                      <div className="text-xs text-blue-700">Total Shifts</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-800">{aiGeneratedSchedule.businessType || 'general'}</div>
+                      <div className="text-xs text-green-700">Business Type</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-800">{aiGeneratedSchedule.changes?.length || 0}</div>
+                      <div className="text-xs text-purple-700">Changes Made</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-800">₹{aiGeneratedSchedule.summary?.total_cost_after?.toFixed(0) || '0'}</div>
+                      <div className="text-xs text-orange-700">Total Cost</div>
+                    </div>
+                    {/* Availability Summary */}
+                    {aiGeneratedSchedule.availability_summary && (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-emerald-800">
+                          {aiGeneratedSchedule.availability_summary.available_staff}/{aiGeneratedSchedule.availability_summary.total_staff}
+                        </div>
+                        <div className="text-xs text-emerald-700">Staff Available</div>
+                        <div className="text-xs text-emerald-600">
+                          {aiGeneratedSchedule.availability_summary.availability_percentage}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    {aiGeneratedSchedule.calendar?.start_date && aiGeneratedSchedule.calendar?.end_date && 
+                      `${new Date(aiGeneratedSchedule.calendar.start_date).toLocaleDateString()} - ${new Date(aiGeneratedSchedule.calendar.end_date).toLocaleDateString()}`
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-slate-50 rounded-xl p-4">
+              {/* Calendar Header */}
               <div className="grid grid-cols-7 gap-2 text-center mb-4">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                   <div key={day} className="p-3 bg-white rounded-lg shadow-sm">
                     <div className="text-sm font-semibold text-slate-500">{day}</div>
-                    <div className="text-lg font-bold text-slate-800">{21 + index}</div>
+                    <div className="text-lg font-bold text-slate-800">
+                      {weekDays[index] ? weekDays[index].getDate() : ''}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-2 min-h-48">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="p-4 bg-white border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 text-sm hover:border-blue-300 transition-colors">
-                    No shifts
-                  </div>
-                ))}
+
+              {/* Calendar Body */}
+              <div className="grid grid-cols-7 gap-2 min-h-96">
+                {weekDays.map((date, index) => {
+                  const dateStr = date.toISOString().split('T')[0];
+                  const dayShifts = shiftsByDate[dateStr] || [];
+                  const dayData = calendarDays.find(day => day.date === dateStr);
+                  
+                  return (
+                    <div key={index} className="p-2 bg-white border-2 border-slate-200 rounded-lg min-h-32">
+                      <div className="text-xs font-semibold text-slate-600 mb-2">
+                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                      
+                      {dayData && (
+                        <div className="mb-2">
+                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            dayData.status === 'ok' ? 'bg-green-100 text-green-800' :
+                            dayData.status === 'understaffed' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {dayData.status === 'ok' ? '✓' : 
+                             dayData.status === 'understaffed' ? '⚠' : '⚠'} {dayData.actual_count}/{dayData.predicted_required}
+                          </div>
+                          {/* Show availability info if available */}
+                          {aiGeneratedSchedule?.availability_summary && (
+                            <div className="text-xs text-slate-500 mt-1">
+                              {aiGeneratedSchedule.availability_summary.available_staff}/{aiGeneratedSchedule.availability_summary.total_staff} available
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="space-y-1">
+                        {dayShifts.length > 0 ? (
+                          dayShifts.slice(0, 3).map((shift, shiftIndex) => (
+                            <div key={shiftIndex} className={`p-2 rounded text-xs border-l-2 ${
+                              shift.is_optimized ? 'bg-blue-50 border-blue-400' : 'bg-gray-50 border-gray-400'
+                            }`}>
+                              <div className="font-semibold text-slate-900 truncate">
+                                {shift.staff_name}
+                              </div>
+                              <div className="text-slate-600 truncate">
+                                {shift.role}
+                              </div>
+                              <div className="text-slate-500 truncate">
+                                {shift.start_time} - {shift.end_time}
+                              </div>
+                              {shift.is_optimized && (
+                                <div className="text-blue-600 font-medium">AI</div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-slate-400 text-xs text-center py-4">
+                            No shifts
+                          </div>
+                        )}
+                        
+                        {dayShifts.length > 3 && (
+                          <div className="text-xs text-slate-500 text-center">
+                            +{dayShifts.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Role Legend */}
+            {aiGeneratedSchedule && (
+              <div className="mt-6 bg-white rounded-xl border border-slate-200 p-4">
+                <h4 className="font-semibold text-slate-900 mb-3">Role Legend</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                    <span className="text-xs text-slate-600">Cashier</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                    <span className="text-xs text-slate-600">Floor Exec</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                    <span className="text-xs text-slate-600">Packer Fragile</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <span className="text-xs text-slate-600">QC</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+                    <span className="text-xs text-slate-600">Picker</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <span className="text-xs text-slate-600">Delivery</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -511,46 +780,305 @@ export default function ScheduleDashboardPage() {
           </div>
         );
 
-      case 'Payroll':
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-slate-800">Payroll Summary</h3>
-              <button className="flex items-center space-x-2 py-2 px-4 rounded-lg border-2 border-slate-300 text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer">
-                <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                <span className="text-sm">Export Report</span>
+        // case 'Payroll': // Removed - integrated into Calendar View
+            return (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-slate-800">AI Generated Schedule Calendar</h3>
+              <button 
+                onClick={handleGenerateAISchedule}
+                disabled={isGeneratingSchedule}
+                className="flex items-center space-x-2 py-2 px-4 rounded-lg border-2 border-slate-300 text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer disabled:opacity-50"
+              >
+                {isGeneratingSchedule ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span className="text-sm">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                        <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span className="text-sm">Generate AI Schedule</span>
+                  </>
+                )}
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl text-center border border-blue-200">
-                <div className="text-3xl font-bold text-blue-800">${(scheduleData.staffBreakdown[0].hours * scheduleData.staffBreakdown[0].rate + scheduleData.staffBreakdown[1].hours * scheduleData.staffBreakdown[1].rate).toFixed(2)}</div>
-                <div className="text-sm text-blue-700 mt-1 font-medium">Total Payroll</div>
-              </div>
-              <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl text-center border border-green-200">
-                <div className="text-3xl font-bold text-green-800">{scheduleData.totalHours.toFixed(1)}h</div>
-                <div className="text-sm text-green-700 mt-1 font-medium">Total Hours</div>
-              </div>
-              <div className="p-6 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl text-center border border-yellow-200">
-                <div className="text-3xl font-bold text-yellow-800">{scheduleData.overtimeHours.toFixed(1)}h</div>
-                <div className="text-sm text-yellow-700 mt-1 font-medium">Overtime Hours</div>
-              </div>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-slate-800 mb-4">Staff Breakdown</h4>
-              <div className="space-y-4">
-                {scheduleData.staffBreakdown.map(member => (
-                  <div key={member.name} className="flex justify-between items-center p-6 bg-slate-50 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <div>
-                      <h5 className="font-semibold text-slate-900">{member.name}</h5>
-                      <p className="text-sm text-slate-600">${member.rate}/hour • {member.hours.toFixed(1)} total hours</p>
+
+                {aiGeneratedSchedule ? (
+                  <div className="space-y-6">
+                    {/* Schedule Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg text-center border border-blue-200">
+                        <div className="text-2xl font-bold text-blue-800">
+                          {aiGeneratedSchedule.optimizedSchedule?.length || 0}
+                        </div>
+                        <div className="text-xs text-blue-700 mt-1 font-medium">Total Shifts</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg text-center border border-green-200">
+                        <div className="text-2xl font-bold text-green-800">
+                          {aiGeneratedSchedule.businessType || 'general'}
+                        </div>
+                        <div className="text-xs text-green-700 mt-1 font-medium">Business Type</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg text-center border border-purple-200">
+                        <div className="text-2xl font-bold text-purple-800">
+                          {aiGeneratedSchedule.changes?.length || 0}
+                        </div>
+                        <div className="text-xs text-purple-700 mt-1 font-medium">Changes Made</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg text-center border border-orange-200">
+                        <div className="text-2xl font-bold text-orange-800">
+                          ₹{aiGeneratedSchedule.summary?.total_cost_after?.toFixed(0) || '0'}
+                        </div>
+                        <div className="text-xs text-orange-700 mt-1 font-medium">Total Cost</div>
+                      </div>
                     </div>
-                    <span className="font-bold text-xl text-slate-800">${(member.rate * member.hours).toFixed(2)}</span>
-                  </div>
-                ))}
+
+                    {/* Google Calendar-like View */}
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="p-4 border-b border-slate-200">
+                        <h4 className="text-lg font-semibold text-slate-900">Schedule Calendar View</h4>
+                        <p className="text-sm text-slate-600 mt-1">
+                          {aiGeneratedSchedule.calendar?.start_date && aiGeneratedSchedule.calendar?.end_date && 
+                            `${new Date(aiGeneratedSchedule.calendar.start_date).toLocaleDateString()} - ${new Date(aiGeneratedSchedule.calendar.end_date).toLocaleDateString()}`
+                          }
+                        </p>
+                      </div>
+                      
+                      {aiGeneratedSchedule.calendar?.days && aiGeneratedSchedule.calendar.days.length > 0 ? (
+                        <div className="p-4">
+                          <div className="space-y-4">
+                            {aiGeneratedSchedule.calendar.days.map((day, dayIndex) => (
+                              <div key={dayIndex} className="border border-slate-200 rounded-lg overflow-hidden">
+                                {/* Day Header */}
+                                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="text-lg font-semibold text-slate-900">
+                                        {new Date(day.date).toLocaleDateString('en-US', { 
+                                          weekday: 'long', 
+                                          month: 'short', 
+                                          day: 'numeric' 
+                                        })}
+                                      </div>
+                                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        day.status === 'ok' ? 'bg-green-100 text-green-800' :
+                                        day.status === 'understaffed' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {day.status === 'ok' ? '✓ Optimal' : 
+                                         day.status === 'understaffed' ? '⚠ Understaffed' : '⚠ Overstaffed'}
+                                      </div>
+                                    </div>
+                                    <div className="text-sm text-slate-600">
+                                      {day.actual_count}/{day.predicted_required} staff • {day.totals?.hours || 0}h • ₹{day.totals?.cost || 0}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Shifts Grid */}
+                                <div className="p-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {day.shifts.map((shift, shiftIndex) => (
+                                      <div key={shiftIndex} className={`p-3 rounded-lg border-l-4 ${
+                                        shift.is_optimized ? 'bg-blue-50 border-blue-400' : 'bg-gray-50 border-gray-400'
+                                      }`}>
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="flex items-center space-x-2 mb-1">
+                                              <span className="font-semibold text-slate-900 text-sm">
+                                                {shift.staff_name}
+                                              </span>
+                                              {shift.is_optimized && (
+                                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                                                  AI
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="text-xs text-slate-600 mb-1">
+                                              {shift.role} • {shift.start_time} - {shift.end_time}
+                                            </div>
+                                            <div className="text-xs text-slate-500">
+                                              {shift.hours}h • ₹{shift.hourly_rate}/hr • ₹{shift.cost}
+                                            </div>
+                                          </div>
+                                          <div className={`w-3 h-3 rounded-full ${
+                                            shift.role === 'cashier' ? 'bg-green-400' :
+                                            shift.role === 'floor_exec' ? 'bg-blue-400' :
+                                            shift.role === 'packer_fragile' ? 'bg-purple-400' :
+                                            shift.role === 'qc' ? 'bg-yellow-400' :
+                                            shift.role === 'picker' ? 'bg-orange-400' :
+                                            shift.role === 'delivery' ? 'bg-red-400' :
+                                            'bg-gray-400'
+                                          }`} title={shift.role}></div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Role Summary */}
+                                  {day.roles && Object.keys(day.roles).length > 0 && (
+                                    <div className="mt-4 pt-3 border-t border-slate-200">
+                                      <div className="flex items-center space-x-4 text-xs">
+                                        <span className="text-slate-600">Role Distribution:</span>
+                                        {Object.entries(day.roles).map(([role, count]) => (
+                                          <div key={role} className="flex items-center space-x-1">
+                                            <div className={`w-2 h-2 rounded-full ${
+                                              role === 'cashier' ? 'bg-green-400' :
+                                              role === 'floor_exec' ? 'bg-blue-400' :
+                                              role === 'packer_fragile' ? 'bg-purple-400' :
+                                              role === 'qc' ? 'bg-yellow-400' :
+                                              role === 'picker' ? 'bg-orange-400' :
+                                              role === 'delivery' ? 'bg-red-400' :
+                                              'bg-gray-400'
+                                            }`}></div>
+                                            <span className="text-slate-600">{role}: {count}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-slate-500">
+                          <div className="text-4xl mb-2">📅</div>
+                          <p className="text-sm">No schedule data available</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Schedule Recommendations */}
+                    {aiGeneratedSchedule.recommendations && aiGeneratedSchedule.recommendations.length > 0 && (
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-6">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="p-2 bg-amber-100 rounded-lg">
+                            <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                            </svg>
+                          </div>
+                          <h4 className="font-semibold text-amber-900">AI Schedule Recommendations</h4>
+                        </div>
+                        <div className="space-y-2">
+                          {aiGeneratedSchedule.recommendations.slice(0, 5).map((rec, index) => (
+                            <p key={index} className="text-amber-800 text-sm leading-relaxed">
+                              • {rec}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Role Legend */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                      <h4 className="font-semibold text-slate-900 mb-3">Role Legend</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                          <span className="text-xs text-slate-600">Cashier</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                          <span className="text-xs text-slate-600">Floor Exec</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                          <span className="text-xs text-slate-600">Packer Fragile</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                          <span className="text-xs text-slate-600">QC</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+                          <span className="text-xs text-slate-600">Picker</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <span className="text-xs text-slate-600">Delivery</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Schedule Changes */}
+                    <div className="bg-white rounded-xl border border-slate-200">
+                      <div className="p-6 border-b border-slate-200">
+                        <h4 className="font-semibold text-slate-900">AI Schedule Changes</h4>
+                        <p className="text-sm text-slate-600 mt-1">Optimizations applied to your schedule</p>
+                      </div>
+                      <div className="p-6">
+                        {aiGeneratedSchedule.changes && aiGeneratedSchedule.changes.length > 0 ? (
+                          <div className="space-y-3">
+                            {aiGeneratedSchedule.changes.slice(0, 10).map((change, index) => (
+                              <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                                change.type === 'ADDED' ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'
+                              }`}>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        change.type === 'ADDED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {change.type === 'ADDED' ? '➕ Added' : '➖ Removed'}
+                                      </span>
+                                      {change.role && (
+                                        <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded">
+                                          {change.role}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-slate-700 mb-1">{change.reason || 'Schedule optimization'}</p>
+                                    <div className="text-xs text-slate-500">
+                                      <span className="font-medium">Date:</span> {change.date || 'N/A'}
+                                      {change.staff_name && (
+                                        <>
+                                          <span className="mx-2">•</span>
+                                          <span className="font-medium">Staff:</span> {change.staff_name}
+                                        </>
+                                      )}
+                                      {change.shift_time && (
+                                        <>
+                                          <span className="mx-2">•</span>
+                                          <span className="font-medium">Time:</span> {change.shift_time}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-slate-500">
+                            <div className="text-3xl mb-2">✅</div>
+                            <p className="text-sm">No schedule changes needed</p>
+                            <p className="text-xs mt-1">Your current schedule is already optimized</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-slate-200">
+                <svg className="w-12 h-12 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">Generate AI Schedule</h3>
+                <p className="text-slate-600 mb-6">Click the button above to generate an optimized schedule based on your business type</p>
+                    <button 
+                      onClick={handleGenerateAISchedule}
+                      disabled={isGeneratingSchedule}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isGeneratingSchedule ? 'Generating...' : 'Generate AI Schedule'}
+                    </button>
+              </div>
+            )}
           </div>
         );
 
@@ -562,8 +1090,73 @@ export default function ScheduleDashboardPage() {
           AI Recommendations {/* Replace with static text */}
         </h3>
       </div>
-      {/* Dynamic AI Insights Component */}
-      <ScheduleAIInsights user={user} />
+      {/* AI Insights for Today */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-semibold text-slate-900">🤖 AI Insights for Today</h4>
+          <button 
+            onClick={() => fetchAIInsights(ownerData?.business_id)}
+            disabled={isLoadingInsights}
+            className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+          >
+            {isLoadingInsights ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        
+        {isLoadingInsights ? (
+          <div className="flex items-center justify-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-sm text-slate-600">Loading insights...</span>
+          </div>
+        ) : aiInsights.length > 0 ? (
+          <div className="space-y-3">
+            {aiInsights.map((insight, index) => (
+              <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                insight.priority === 'high' ? 'bg-red-50 border-red-400' :
+                insight.priority === 'medium' ? 'bg-yellow-50 border-yellow-400' :
+                'bg-blue-50 border-blue-400'
+              }`}>
+                <div className="flex items-start space-x-2">
+                  <span className="text-xl">{insight.icon}</span>
+                  <div className="flex-1">
+                    <h5 className="font-semibold text-slate-900 text-sm">
+                      {insight.title}
+                    </h5>
+                    <p className="text-slate-700 text-xs mt-1">
+                      {insight.message}
+                    </p>
+                    {insight.details && (
+                      <p className="text-slate-600 text-xs mt-1">
+                        📋 {insight.details}
+                      </p>
+                    )}
+                    {insight.recommendation && (
+                      <p className="text-slate-600 text-xs mt-1">
+                        💡 {insight.recommendation}
+                      </p>
+                    )}
+                    <div className="mt-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        insight.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {insight.priority.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-slate-500">
+            <div className="text-3xl mb-2">🤖</div>
+            <p className="text-sm">No insights available for today</p>
+            <p className="text-xs mt-1">Check back later for AI-powered recommendations</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -719,11 +1312,24 @@ export default function ScheduleDashboardPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                </svg>
-                <span className="text-sm">Generate AI Schedule</span>
+              <button 
+                onClick={handleGenerateAISchedule}
+                disabled={isGeneratingSchedule}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              >
+                {isGeneratingSchedule ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span className="text-sm">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                     <span className="text-sm">Generate AI Schedule</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -796,7 +1402,7 @@ export default function ScheduleDashboardPage() {
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 mb-8">
           <div className="border-b border-slate-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {['Calendar View', 'List View', 'Payroll', 'AI Insights'].map(view => (
+              {['Calendar View', 'List View', 'AI Insights'].map(view => (
                 <button
                   key={view}
                   onClick={() => setScheduleView(view)}
