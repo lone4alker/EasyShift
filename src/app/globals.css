@@ -5,12 +5,7 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Theme variables */
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -23,4 +18,164 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Mobile-First Responsive Utilities */
+/* Touch-friendly interactive elements */
+.btn-responsive {
+  padding: 0.75rem 1rem;
+  min-height: 44px;
+  touch-action: manipulation;
+  font-size: 1rem;
+}
+
+@media (min-width: 640px) {
+  .btn-responsive {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+.btn-responsive:active {
+  transform: scale(0.98);
+}
+
+/* Mobile navigation */
+.mobile-nav-open {
+  overflow: hidden;
+}
+
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-nav-overlay.active {
+  opacity: 1;
+}
+
+.mobile-nav-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 280px;
+  background: white;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-nav-sidebar.active {
+  transform: translateX(0);
+}
+
+/* Mobile hamburger menu animation */
+.hamburger-line {
+  display: block;
+  height: 2px;
+  width: 1.5rem;
+  background-color: currentColor;
+  transition: all 0.3s ease-in-out;
+}
+
+.hamburger-active .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-active .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* Mobile scroll optimizations */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Touch optimization for mobile */
+@media (hover: none) {
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  .group:hover .group-hover\:bg-blue-200 {
+    background-color: inherit;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  /* Ensure minimum touch targets */
+  button, a, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Mobile-friendly modal sizing */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  
+  /* Mobile-first navigation adjustments */
+  .nav-mobile {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  /* Mobile typography adjustments */
+  .text-mobile-sm {
+    font-size: 0.875rem;
+  }
+  
+  .text-mobile-base {
+    font-size: 1rem;
+  }
+  
+  /* Mobile padding adjustments */
+  .p-mobile {
+    padding: 0.75rem;
+  }
+  
+  .px-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .py-mobile {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  /* Icon size optimizations for mobile */
+  .icon-mobile {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  
+  /* Enhanced touch feedback */
+  .touch-feedback:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  
+  /* Better spacing for small elements */
+  .small-element-spacing {
+    margin: 0.25rem;
+    padding: 0.5rem;
+  }
 }

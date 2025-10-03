@@ -7,7 +7,7 @@ import { supabase } from '@/app/utils/supabase';
 import { useT, formatTime } from '@/app/utils/translations';
 import LanguageSwitcher from '../../../../components/ui/LanguageSwitcher';
 import AIInsights from './components/AIInsights';
-// import OwnerNavbar from '../..                <span className="text-sm">{t('buttons.exportReport')}</span>../../components/ui/OwnerNavbar';
+// import OwnerNavbar from '../../../components/ui/OwnerNavbar';
 
 export default function OwnerDashboard() {
   const { t } = useT();
@@ -24,6 +24,7 @@ export default function OwnerDashboard() {
   const [businessId, setBusinessId] = useState(null);
   const [aiInsights, setAiInsights] = useState([]);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const fetchAIInsights = async (businessId) => {
@@ -378,6 +379,18 @@ export default function OwnerDashboard() {
                   {t('appName')}
                 </h1>
               </Link>
+              
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="btn-responsive lg:hidden p-3 sm:p-2 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors min-h-[44px] min-w-[44px]"
+              >
+                <div className={`hamburger ${mobileMenuOpen ? 'hamburger-active' : ''}`}>
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                </div>
+              </button>
 
               {/* Main Navigation - Desktop Only */}
               <div className="hidden lg:flex items-center space-x-1">
@@ -388,22 +401,22 @@ export default function OwnerDashboard() {
                   <span className="text-sm">{t('navigation.dashboard')}</span>
                 </div>
 
-                <Link href="/owner/staff-management" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Link href="/owner/staff-management" className="btn-responsive flex items-center px-3 py-3 sm:py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 min-h-[44px]">
+                  <svg className="w-5 h-5 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <span className="text-sm">{t('navigation.staffManagement')}</span>
                 </Link>
 
-                <Link href="/owner/schedule" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Link href="/owner/schedule" className="btn-responsive flex items-center px-3 py-3 sm:py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 min-h-[44px]">
+                  <svg className="w-5 h-5 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
                   </svg>
                   <span className="text-sm">{t('navigation.schedule')}</span>
                 </Link>
 
-                <Link href="/owner/analytics" className="flex items-center px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Link href="/owner/analytics" className="btn-responsive flex items-center px-3 py-3 sm:py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 min-h-[44px]">
+                  <svg className="w-5 h-5 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                   <span className="text-sm">{t('navigation.analytics')}</span>
@@ -426,10 +439,10 @@ export default function OwnerDashboard() {
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                  className="btn-responsive p-3 sm:p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 min-h-[44px] min-w-[44px]"
                   title={t('buttons.signOut')}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                 </button>
@@ -437,19 +450,118 @@ export default function OwnerDashboard() {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Navigation Overlay */}
+        {mobileMenuOpen && (
+          <>
+            <div 
+              className="mobile-nav-overlay active lg:hidden" 
+              onClick={() => setMobileMenuOpen(false)}
+            ></div>
+            <div className={`mobile-nav-sidebar ${mobileMenuOpen ? 'active' : ''} lg:hidden`}>
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <span className="font-semibold text-gray-900">{t('appName')}</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="py-4">
+                <div className="px-4 mb-4">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Navigation</div>
+                  <div className="flex items-center px-3 py-2 text-blue-600 bg-blue-100 rounded-lg font-medium mb-2">
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.dashboard')}</span>
+                  </div>
+                </div>
+                
+                <nav className="px-4 space-y-1">
+                  <Link 
+                    href="/owner/staff-management" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.staffManagement')}</span>
+                  </Link>
+                  
+                  <Link 
+                    href="/owner/schedule" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a4 4 0 11-8 0 4 4 0 018 0zm0 0c0 1.5 1 3 4 3s4-1.5 4-3" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.schedule')}</span>
+                  </Link>
+                  
+                  <Link 
+                    href="/owner/analytics" 
+                    className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-sm">{t('navigation.analytics')}</span>
+                  </Link>
+                </nav>
+                
+                <div className="px-4 mt-6 pt-4 border-t border-gray-200">
+                  <div className="mb-4">
+                    <LanguageSwitcher />
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 mb-2">
+                    {ownerData?.owner_full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Admin User'}
+                  </div>
+                  
+                  <button
+                    onClick={handleSignOut}
+                    className="btn-responsive flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-base sm:text-sm min-h-[44px]"
+                  >
+                    <svg className="w-5 h-5 sm:w-4 sm:h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    {t('buttons.signOut')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Breadcrumb Navigation */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-        <nav className="flex items-center space-x-2 text-sm">
-          <Link href="/" className="text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center">
-            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-2 sm:py-3 lg:py-4">
+        <nav className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm overflow-x-auto">
+          <Link href="/" className="text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center flex-shrink-0 px-2 py-1 sm:px-1 sm:py-0 rounded min-h-[32px] sm:min-h-0 touch-manipulation">
+            <svg className="w-4 h-4 sm:w-3 sm:h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs">{tDashboard('breadcrumb.home')}</span>
+            <span>{tDashboard('breadcrumb.home')}</span>
           </Link>
-          <span className="text-slate-400">/</span>
-          <span className="text-slate-700 font-medium text-xs sm:text-sm">{tDashboard('breadcrumb.ownerDashboard')}</span>
+          <span className="text-slate-400 flex-shrink-0">/</span>
+          <span className="text-slate-700 font-medium truncate">{tDashboard('breadcrumb.ownerDashboard')}</span>
         </nav>
       </div>
 
@@ -484,8 +596,8 @@ export default function OwnerDashboard() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <button onClick={handleExportReport} className="flex items-center space-x-2 px-4 py-2 border-2 border-slate-300 text-slate-700 font-medium rounded-lg hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button onClick={handleExportReport} className="btn-responsive flex items-center space-x-2 px-4 py-3 border-2 border-slate-300 text-slate-700 font-medium rounded-lg hover:border-blue-300 hover:text-blue-600 transition-all duration-200 cursor-pointer min-h-[44px]">
+                <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span className="text-sm">Export Payroll Report</span>

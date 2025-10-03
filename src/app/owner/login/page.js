@@ -212,24 +212,24 @@ export default function OwnerLogin() {
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center min-h-screen px-6 relative z-10">
+      <div className="flex items-center justify-center min-h-screen px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         <div className="w-full max-w-md">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg mb-3 sm:mb-4">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Owner Portal</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Owner Portal</h1>
+            <p className="text-sm sm:text-base text-slate-600">
               Welcome back! Sign in to manage your business
             </p>
           </div>
 
           {/* Login Form */}
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
+          <div className="bg-white/70 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-white/50 p-4 sm:p-6 lg:p-8">
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg" role="alert">
                   <div className="flex items-center">
@@ -254,7 +254,7 @@ export default function OwnerLogin() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setEmailTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 rounded-lg border-2 transition-all duration-200 text-black focus:outline-none ${
+                    className={`btn-responsive w-full px-4 py-3 pl-10 sm:pl-12 rounded-lg border-2 transition-all duration-200 text-black focus:outline-none ${
                       emailTouched && !isEmailValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : email && isEmailValid
@@ -285,7 +285,7 @@ export default function OwnerLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => setPasswordTouched(true)}
-                    className={`w-full px-4 py-3 pl-12 pr-12 rounded-lg border-2 transition-all text-black duration-200 focus:outline-none ${
+                    className={`btn-responsive w-full px-4 py-3 pl-10 sm:pl-12 pr-10 sm:pr-12 rounded-lg border-2 transition-all text-black duration-200 focus:outline-none ${
                       passwordTouched && !isPasswordValid
                         ? 'border-red-300 focus:border-red-500 bg-red-50'
                         : password && isPasswordValid
@@ -334,7 +334,7 @@ export default function OwnerLogin() {
               <button
                 type="submit"
                 disabled={loading || !isFormValid}
-                className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
+                className={`btn-responsive w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
                   loading || !isFormValid
                     ? 'bg-slate-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
